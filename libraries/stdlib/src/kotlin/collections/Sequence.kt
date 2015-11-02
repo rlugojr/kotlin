@@ -1,10 +1,9 @@
 @file:kotlin.jvm.JvmMultifileClass
 @file:kotlin.jvm.JvmName("SequencesKt")
 
-package kotlin
+package kotlin.sequences
 
 import java.util.*
-import kotlin.support.AbstractIterator
 
 /**
  * A sequence that returns values through its iterator. The values are evaluated lazily, and the sequence
