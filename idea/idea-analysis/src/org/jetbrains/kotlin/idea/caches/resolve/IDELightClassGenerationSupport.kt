@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.idea.caches.resolve
 
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.ClassFileViewProvider
@@ -29,6 +30,7 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.asJava.*
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.fileClasses.JvmFileClassUtil
 import org.jetbrains.kotlin.fileClasses.javaFileFacadeFqName
 import org.jetbrains.kotlin.idea.decompiler.classFile.KtClsFile
 import org.jetbrains.kotlin.idea.decompiler.navigation.SourceNavigationHelper
@@ -309,7 +311,7 @@ class IDELightClassGenerationSupport(private val project: Project) : LightClassG
         return getClassRelativeName(parent).child(name)
     }
 
-    private fun createLightClassForDecompiledKotlinFile(file: KtFile): KtLightClassForDecompiledDeclaration? {
+    fun createLightClassForDecompiledKotlinFile(file: KtFile): KtLightClassForDecompiledDeclaration? {
         val virtualFile = file.virtualFile ?: return null
 
         val classOrObject = file.declarations.filterIsInstance<KtClassOrObject>().singleOrNull()
@@ -349,5 +351,25 @@ class IDELightClassGenerationSupport(private val project: Project) : LightClassG
 
     companion object {
         private val LOG = Logger.getInstance(IDELightClassGenerationSupport::class.java)
+    }
+}
+
+class KtFileClassProviderImpl(val lightClassGenerationSupport: LightClassGenerationSupport) : KtFileClassProvider {
+    override fun getFileClasses(file: KtFile): Array<PsiClass> {
+        if (file.isCompiled) {
+            return arrayOf()
+        }
+
+        val result = arrayListOf<PsiClass>()
+        file.declarations.filterIsInstance<KtClassOrObject>().map { lightClassGenerationSupport.getPsiClass(it) }.filterNotNullTo(result)
+
+        val module = ModuleUtilCore.findModuleForPsiElement(file)
+        if (module != null) {
+            val fileClassFqName = JvmFileClassUtil.getFileClassInfoNoResolve(file).fileClassFqName
+            lightClassGenerationSupport.getFacadeClasses(fileClassFqName, module.moduleContentScope).filterTo(result) {
+                it is KtLightClassForFacade && file in it.files
+            }
+        }
+        return result.toTypedArray()
     }
 }
