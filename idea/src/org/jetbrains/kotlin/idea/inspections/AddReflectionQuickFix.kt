@@ -24,9 +24,9 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.idea.KotlinBundle
-import org.jetbrains.kotlin.idea.configuration.ConfigureKotlinInProjectUtils
 import org.jetbrains.kotlin.idea.configuration.KotlinJavaModuleConfigurator
 import org.jetbrains.kotlin.idea.configuration.KotlinProjectConfigurator
+import org.jetbrains.kotlin.idea.configuration.showInfoNotification
 import org.jetbrains.kotlin.idea.framework.JavaRuntimePresentationProvider
 import org.jetbrains.kotlin.idea.quickfix.KotlinQuickFixAction
 import org.jetbrains.kotlin.idea.quickfix.KotlinSingleIntentionActionFactory
@@ -67,8 +67,7 @@ public class AddReflectionQuickFix(element: KtElement) : KotlinQuickFixAction<Kt
 
             model.commit()
 
-            ConfigureKotlinInProjectUtils.showInfoNotification(project,
-                    "${PathUtil.KOTLIN_JAVA_REFLECT_JAR} was added to the library ${library.getName()}"
+            showInfoNotification(project, "${PathUtil.KOTLIN_JAVA_REFLECT_JAR} was added to the library ${library.getName()}"
             )
         }
     }

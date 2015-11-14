@@ -21,45 +21,47 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import org.jetbrains.kotlin.idea.configuration.ConfigureKotlinInProjectUtils
 import org.jetbrains.kotlin.idea.configuration.KotlinProjectConfigurator
+import org.jetbrains.kotlin.idea.configuration.getAbleToRunConfigurators
+import org.jetbrains.kotlin.idea.configuration.isProjectConfigured
+import org.jetbrains.kotlin.idea.configuration.showConfigureKotlinNotificationIfNeeded
 import org.jetbrains.kotlin.js.resolve.JsPlatform
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
 
 public abstract class ConfigureKotlinInProjectAction : AnAction() {
 
-    abstract fun getAbleToRunConfigurators(project: Project): Collection<KotlinProjectConfigurator>
+    abstract fun getApplicableConfigurators(project: Project): Collection<KotlinProjectConfigurator>
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = CommonDataKeys.PROJECT.getData(e.getDataContext())
         if (project == null) return
 
-        if (ConfigureKotlinInProjectUtils.isProjectConfigured(project)) {
+        if (isProjectConfigured(project)) {
             Messages.showInfoMessage("All modules with kotlin files are configured", e.getPresentation().getText()!!)
             return
         }
 
-        val configurators = getAbleToRunConfigurators(project)
+        val configurators = getApplicableConfigurators(project)
 
         when {
             configurators.size() == 1 -> configurators.first().configure(project)
             configurators.isEmpty() -> Messages.showErrorDialog("There aren't configurators available", e.getPresentation().getText()!!)
             else -> {
                 Messages.showErrorDialog("More than one configurator is available", e.getPresentation().getText()!!)
-                ConfigureKotlinInProjectUtils.showConfigureKotlinNotificationIfNeeded(project)
+                showConfigureKotlinNotificationIfNeeded(project)
             }
         }
     }
 }
 
 public class ConfigureKotlinJsInProjectAction: ConfigureKotlinInProjectAction() {
-    override fun getAbleToRunConfigurators(project: Project) = ConfigureKotlinInProjectUtils.getAbleToRunConfigurators(project).filter {
+    override fun getApplicableConfigurators(project: Project) = getAbleToRunConfigurators(project).filter {
         it.getTargetPlatform() == JsPlatform
     }
 }
 
 public class ConfigureKotlinJavaInProjectAction: ConfigureKotlinInProjectAction() {
-    override fun getAbleToRunConfigurators(project: Project) = ConfigureKotlinInProjectUtils.getAbleToRunConfigurators(project).filter {
+    override fun getApplicableConfigurators(project: Project) = getAbleToRunConfigurators(project).filter {
         it.getTargetPlatform() == JvmPlatform
     }
 }
