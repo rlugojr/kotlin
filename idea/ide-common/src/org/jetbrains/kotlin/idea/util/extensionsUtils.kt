@@ -105,7 +105,7 @@ public fun CallableDescriptor.substituteExtensionIfCallable(
 public fun ReceiverValue.getThisReceiverOwner(bindingContext: BindingContext): DeclarationDescriptor? {
     return when (this) {
         is ExpressionReceiver -> {
-            val thisRef = (KtPsiUtil.deparenthesize(this.getExpression()) as? KtThisExpression)?.getInstanceReference() ?: return null
+            val thisRef = (KtPsiUtil.deparenthesize(this.expression) as? KtThisExpression)?.getInstanceReference() ?: return null
             bindingContext[BindingContext.REFERENCE_TARGET, thisRef]
         }
 
