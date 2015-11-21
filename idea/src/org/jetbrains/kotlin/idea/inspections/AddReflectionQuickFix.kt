@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.idea.framework.JavaRuntimePresentationProvider
 import org.jetbrains.kotlin.idea.quickfix.KotlinQuickFixAction
 import org.jetbrains.kotlin.idea.quickfix.KotlinSingleIntentionActionFactory
 import org.jetbrains.kotlin.idea.quickfix.quickfixUtil.createIntentionForFirstParentOfType
-import org.jetbrains.kotlin.idea.versions.KotlinRuntimeLibraryUtil
+import org.jetbrains.kotlin.idea.versions.findKotlinLibraries
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.PathUtil
@@ -49,7 +49,7 @@ public class AddReflectionQuickFix(element: KtElement) : KotlinQuickFixAction<Kt
         val configurator = Extensions.getExtensions(KotlinProjectConfigurator.EP_NAME)
                                    .firstIsInstanceOrNull<KotlinJavaModuleConfigurator>() ?: return
 
-        for (library in KotlinRuntimeLibraryUtil.findKotlinLibraries(project)) {
+        for (library in findKotlinLibraries(project)) {
             val runtimeJar = JavaRuntimePresentationProvider.getRuntimeJar(library) ?: continue
             if (JavaRuntimePresentationProvider.getReflectJar(library) != null) continue
 
