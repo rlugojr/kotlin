@@ -41,7 +41,7 @@ public abstract class ConfigureKotlinInProjectAction : AnAction() {
         val configurators = getApplicableConfigurators(project)
 
         when {
-            configurators.size == 1 -> configurators.first().configure(project)
+            configurators.size == 1 -> configurators.first().configure(project, emptyList())
             configurators.isEmpty() -> Messages.showErrorDialog("There aren't configurators available", e.getPresentation().getText()!!)
             else -> {
                 Messages.showErrorDialog("More than one configurator is available", e.getPresentation().getText()!!)
