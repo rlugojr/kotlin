@@ -150,7 +150,7 @@ public class CallResolver {
         CallableDescriptorCollectors<VariableDescriptor> callableDescriptorCollectors = CallableDescriptorCollectors.VARIABLES;
         return computeTasksAndResolveCall(
                 context, referencedName, nameExpression,
-                callableDescriptorCollectors, CallTransformer.VARIABLE_CALL_TRANSFORMER, ResolveKind.PROPERTY);
+                callableDescriptorCollectors, CallTransformer.VARIABLE_CALL_TRANSFORMER, ResolveKind.VARIABLE);
     }
 
     @NotNull
@@ -779,7 +779,7 @@ public class CallResolver {
     public enum ResolveKind {
         FUNCTION,
         INVOKE,
-        PROPERTY,
+        VARIABLE,
         CALLABLE_REFERENCE,
         GIVEN_CANDIDATES,
     }
