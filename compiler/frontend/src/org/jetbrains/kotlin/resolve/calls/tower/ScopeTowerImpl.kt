@@ -46,7 +46,7 @@ internal class CandidateWithBoundDispatchReceiverImpl<D : CallableDescriptor>(
 
 }
 
-private fun DataFlowInfos.getAllPossibleTypes(receiver: ReceiverValue): Collection<KotlinType> {
+private fun DataFlowDecorator.getAllPossibleTypes(receiver: ReceiverValue): Collection<KotlinType> {
     return getPossibleTypes(receiver) fastPlus receiver.type
 }
 
@@ -55,11 +55,11 @@ internal class ScopeTowerImpl(
         private val explicitReceiver: Receiver?,
         override val location: LookupLocation
 ): ScopeTower {
-    override val smartCastCache: DataFlowInfos = DataFlowInfosImpl(resolutionContext)
+    override val dataFlowInfo: DataFlowDecorator = DataFlowDecoratorImpl(resolutionContext)
     override val lexicalScope: LexicalScope = resolutionContext.scope
 
     override val implicitReceivers = resolutionContext.scope.getImplicitReceiversHierarchy().
-            map { it.value.check { !it.type.containsError() } }.filterNotNull()
+            mapNotNull { it.value.check { !it.type.containsError() } }
 
     override val levels: Sequence<ScopeTowerLevel> = createPrototypeLevels().asSequence().map { it.asTowerLevel(this) }
 
@@ -67,12 +67,12 @@ internal class ScopeTowerImpl(
     private val receiversForSyntheticExtensions: Collection<KotlinType> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         if (explicitReceiver != null) {
             if (explicitReceiver is ReceiverValue) {
-                return@lazy smartCastCache.getAllPossibleTypes(explicitReceiver)
+                return@lazy dataFlowInfo.getAllPossibleTypes(explicitReceiver)
             }
 
             if (explicitReceiver is ClassQualifier) {
-                explicitReceiver.companionObjectReceiver?.let {
-                    return@lazy smartCastCache.getPossibleTypes(it)
+                explicitReceiver.classValueReceiver?.let {
+                    return@lazy dataFlowInfo.getAllPossibleTypes(it)
                 }
             }
 
@@ -80,46 +80,43 @@ internal class ScopeTowerImpl(
             emptyList()
         }
         else {
-            implicitReceivers.flatMap { smartCastCache.getAllPossibleTypes(it) }
+            implicitReceivers.flatMap { dataFlowInfo.getAllPossibleTypes(it) }
         }
     }
 
-    private sealed class LevelPrototype {
+    private sealed class LevelFactory {
         abstract fun asTowerLevel(resolveTower: ScopeTower): ScopeTowerLevel
 
-        class LocalScope(val lexicalScope: LexicalScope): LevelPrototype() {
-            override fun asTowerLevel(resolveTower: ScopeTower) = ScopeScopeTowerLevel(resolveTower, lexicalScope)
+        class Scope(val lexicalScope: LexicalScope): LevelFactory() {
+            override fun asTowerLevel(resolveTower: ScopeTower) = ScopeBasedTowerLevel(resolveTower, lexicalScope)
         }
 
-        class Scope(val lexicalScope: LexicalScope): LevelPrototype() {
-            override fun asTowerLevel(resolveTower: ScopeTower) = ScopeScopeTowerLevel(resolveTower, lexicalScope)
-        }
-
-        class Receiver(val implicitReceiver: ReceiverParameterDescriptor): LevelPrototype() {
+        class Receiver(val implicitReceiver: ReceiverParameterDescriptor): LevelFactory() {
             override fun asTowerLevel(resolveTower: ScopeTower) = ReceiverScopeTowerLevel(resolveTower, implicitReceiver.value)
         }
 
-        class ImportingScopeLevel(val importingScope: ImportingScope, val lazyReceiversForSyntheticExtensions: () -> Collection<KotlinType>): LevelPrototype() {
-            override fun asTowerLevel(resolveTower: ScopeTower) = ImportingScopeScopeTowerLevel(resolveTower, importingScope, lazyReceiversForSyntheticExtensions())
+        class ImportingScopeFactory(val importingScope: ImportingScope, val lazyReceiversForSyntheticExtensions: () -> Collection<KotlinType>): LevelFactory() {
+            override fun asTowerLevel(resolveTower: ScopeTower) = ImportingScopeBasedTowerLevel(resolveTower, importingScope, lazyReceiversForSyntheticExtensions())
         }
     }
 
-    private fun createPrototypeLevels(): List<LevelPrototype> {
-        val result = ArrayList<LevelPrototype>()
+    private fun createPrototypeLevels(): List<LevelFactory> {
+        val result = ArrayList<LevelFactory>()
 
         // locals win
-        result.addAll(lexicalScope.parentsWithSelf.
-                filter { it is LexicalScope && it.kind.local }.
-                map { LevelPrototype.LocalScope(it as LexicalScope) })
+        lexicalScope.parentsWithSelf.
+                filterIsInstance<LexicalScope>().
+                filter { it.kind.local }.
+                mapTo(result) { LevelFactory.Scope(it) }
 
         lexicalScope.parentsWithSelf.forEach { scope ->
             if (scope is LexicalScope) {
-                if (!scope.kind.local) result.add(LevelPrototype.Scope(scope))
+                if (!scope.kind.local) result.add(LevelFactory.Scope(scope))
 
-                scope.implicitReceiver?.let { result.add(LevelPrototype.Receiver(it)) }
+                scope.implicitReceiver?.let { result.add(LevelFactory.Receiver(it)) }
             }
             else {
-                result.add(LevelPrototype.ImportingScopeLevel(scope as ImportingScope, { receiversForSyntheticExtensions }))
+                result.add(LevelFactory.ImportingScopeFactory(scope as ImportingScope, { receiversForSyntheticExtensions }))
             }
         }
 
@@ -128,12 +125,12 @@ internal class ScopeTowerImpl(
 
 }
 
-private class DataFlowInfosImpl(private val resolutionContext: ResolutionContext<*>): DataFlowInfos {
+private class DataFlowDecoratorImpl(private val resolutionContext: ResolutionContext<*>): DataFlowDecorator {
     private val dataFlowInfo = resolutionContext.dataFlowInfo
-    private val smartCastInfoCache = HashMap<ReceiverValue, SmartCastInfo>()
+    private val cache = HashMap<ReceiverValue, SmartCastInfo>()
 
     private fun getSmartCastInfo(receiver: ReceiverValue): SmartCastInfo
-            = smartCastInfoCache.getOrPut(receiver) {
+            = cache.getOrPut(receiver) {
         val dataFlowValue = DataFlowValueFactory.createDataFlowValue(receiver, resolutionContext)
         SmartCastInfo(dataFlowValue, dataFlowInfo.getPossibleTypes(dataFlowValue))
     }
@@ -142,7 +139,6 @@ private class DataFlowInfosImpl(private val resolutionContext: ResolutionContext
 
     override fun isStableReceiver(receiver: ReceiverValue): Boolean = getSmartCastInfo(receiver).dataFlowValue.isPredictable
 
-    // exclude receiver.type
     override fun getPossibleTypes(receiver: ReceiverValue): Set<KotlinType> = getSmartCastInfo(receiver).possibleTypes
 
     private data class SmartCastInfo(val dataFlowValue: DataFlowValue, val possibleTypes: Set<KotlinType>)

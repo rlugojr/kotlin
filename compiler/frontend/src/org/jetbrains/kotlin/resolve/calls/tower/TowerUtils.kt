@@ -23,6 +23,8 @@ import org.jetbrains.kotlin.resolve.calls.results.ResolutionStatus
 import org.jetbrains.kotlin.resolve.descriptorUtil.hasLowPriorityInOverloadResolution
 
 
+// todo concat
+
 internal fun <D : CallableDescriptor> CandidateWithBoundDispatchReceiver<D>.addDiagnostic(error: ResolutionDiagnostic?): CandidateWithBoundDispatchReceiver<D> {
     if (error == null) return this
     return CandidateWithBoundDispatchReceiverImpl(dispatchReceiver, descriptor, diagnostics + error)
@@ -42,6 +44,7 @@ fun createPreviousResolveError(status: ResolutionStatus): PreviousResolutionErro
 }
 
 
+// removed
 internal infix fun <T: Any> Collection<T>.fastPlus(t: T?): Collection<T> {
     if (t == null) return this
 

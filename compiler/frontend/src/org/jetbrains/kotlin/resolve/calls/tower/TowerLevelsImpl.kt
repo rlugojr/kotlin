@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.ErrorUtils
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addIfNotNull
+import java.util.*
 
 internal abstract class AbstractScopeTowerLevel(
         protected val resolveTower: ScopeTower
@@ -44,8 +45,8 @@ internal abstract class AbstractScopeTowerLevel(
         val diagnostics = SmartList<ResolutionDiagnostic>()
         diagnostics.addIfNotNull(specialError)
 
-        if (ErrorUtils.isError(descriptor)) diagnostics.add(ErrorDescriptor())
-        if (descriptor.isSynthesized) diagnostics.add(SynthesizedDescriptor())
+        if (ErrorUtils.isError(descriptor)) diagnostics.add(ErrorDescriptorDiagnostic)
+        if (descriptor.isSynthesized) diagnostics.add(SynthesizedDescriptorDiagnostic)
         if (dispatchReceiverSmartCastType != null) diagnostics.add(UsedSmartCastForDispatchReceiver(dispatchReceiverSmartCastType))
 
         Visibilities.findInvisibleMember(
@@ -126,19 +127,21 @@ internal class ReceiverScopeTowerLevel(
             members: ResolutionScope.() -> Collection<D>,
             additionalDescriptors: ResolutionScope.(smartCastType: KotlinType?) -> Collection<CandidateWithBoundDispatchReceiver<D>> // todo
     ): Collection<CandidateWithBoundDispatchReceiver<D>> {
-        var result: Collection<CandidateWithBoundDispatchReceiver<D>> = memberScope.members().map {
+        val result = ArrayList<CandidateWithBoundDispatchReceiver<D>>(0)
+        memberScope.members().mapTo(result) {
             createCandidateDescriptor(it, dispatchReceiver)
-        } fastPlus memberScope.additionalDescriptors(null)
+        }
+        result.addAll(memberScope.additionalDescriptors(null))
 
-        val smartCastPossibleTypes = resolveTower.smartCastCache.getPossibleTypes(dispatchReceiver)
-        val unstableError = if (resolveTower.smartCastCache.isStableReceiver(dispatchReceiver)) null else UnstableSmartCast()
+        val smartCastPossibleTypes = resolveTower.dataFlowInfo.getPossibleTypes(dispatchReceiver)
+        val unstableError = if (resolveTower.dataFlowInfo.isStableReceiver(dispatchReceiver)) null else UnstableSmartCastDiagnostic
 
         for (possibleType in smartCastPossibleTypes) {
-            result = result fastPlus possibleType.memberScope.members().map {
+            possibleType.memberScope.members().mapTo(result) {
                 createCandidateDescriptor(it, dispatchReceiver, unstableError, dispatchReceiverSmartCastType = possibleType)
             }
 
-            result = result fastPlus possibleType.memberScope.additionalDescriptors(possibleType).map {
+            possibleType.memberScope.additionalDescriptors(possibleType).mapTo(result) {
                 it.addDiagnostic(unstableError)
             }
         }
@@ -185,7 +188,7 @@ internal class QualifierScopeTowerLevel(resolveTower: ScopeTower, qualifier: Qua
     }
 }
 
-internal open class ScopeScopeTowerLevel(
+internal open class ScopeBasedTowerLevel(
         resolveTower: ScopeTower,
         private val lexicalScope: ResolutionScope
 ) : ConstructorsAndFakeVariableHackLevelScope(resolveTower) {
@@ -213,11 +216,11 @@ internal open class ScopeScopeTowerLevel(
     }
 }
 
-internal class ImportingScopeScopeTowerLevel(
+internal class ImportingScopeBasedTowerLevel(
         resolveTower: ScopeTower,
         private val importingScope: ImportingScope,
         private val receiversForSyntheticExtensions: Collection<KotlinType>
-): ScopeScopeTowerLevel(resolveTower, importingScope) {
+): ScopeBasedTowerLevel(resolveTower, importingScope) {
 
     override fun getVariables(name: Name): Collection<CandidateWithBoundDispatchReceiver<VariableDescriptor>> {
         val synthetic = importingScope.getContributedSyntheticExtensionProperties(receiversForSyntheticExtensions, name, location).map {

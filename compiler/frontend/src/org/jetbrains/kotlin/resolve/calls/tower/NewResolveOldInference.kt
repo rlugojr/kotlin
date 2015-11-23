@@ -63,7 +63,7 @@ class NewResolveOldInference(
 
         val collector =
             when (kind) {
-                CallResolver.ResolveKind.PROPERTY -> createVariableCollector(baseContext, explicitReceiver)
+                CallResolver.ResolveKind.VARIABLE -> createVariableCollector(baseContext, explicitReceiver)
                 CallResolver.ResolveKind.FUNCTION -> createFunctionTowerCandidatesCollector(baseContext, explicitReceiver)
                 CallResolver.ResolveKind.CALLABLE_REFERENCE -> CompositeScopeTowerProcessor(
                         createFunctionTowerCandidatesCollector(baseContext, explicitReceiver),
@@ -91,7 +91,7 @@ class NewResolveOldInference(
             create: (ReceiverValue?) -> ScopeTowerProcessor<Candidate>
     ): ScopeTowerProcessor<Candidate> {
         return if (explicitReceiver is Qualifier) {
-            (explicitReceiver as? ClassQualifier)?.companionObjectReceiver?.let(create)
+            (explicitReceiver as? ClassQualifier)?.classValueReceiver?.let(create)
             ?: KnownResultProcessorScope<Candidate>(listOf())
         }
         else {
@@ -143,7 +143,7 @@ class NewResolveOldInference(
                     else if (error is NestedClassViaInstanceReference) {
                         tracing.nestedClassAccessViaInstanceReference(resolvedCall.trace, error.classDescriptor, resolvedCall.explicitReceiverKind)
                     }
-                    else if (error is ErrorDescriptor) {
+                    else if (error is ErrorDescriptorDiagnostic) {
                         // todo
                         //  return@map null
                     }

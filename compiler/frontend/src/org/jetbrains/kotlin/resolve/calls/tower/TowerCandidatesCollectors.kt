@@ -150,7 +150,7 @@ private fun <Candidate> createSimpleCollector(
         val qualifierCollector = QualifierScopeTowerCandidateCollector(context, explicitReceiver, collectCandidates)
 
         // todo enum entry, object.
-        val companionObject = (explicitReceiver as? ClassQualifier)?.companionObjectReceiver ?: return qualifierCollector
+        val companionObject = (explicitReceiver as? ClassQualifier)?.classValueReceiver ?: return qualifierCollector
         return CompositeScopeTowerProcessor(
                 qualifierCollector,
                 ExplicitReceiverScopeTowerCandidateCollector(context, companionObject, collectCandidates)

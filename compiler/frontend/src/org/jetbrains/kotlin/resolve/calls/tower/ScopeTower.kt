@@ -35,13 +35,13 @@ interface ScopeTower {
 
     val location: LookupLocation
 
-    val smartCastCache: DataFlowInfos
+    val dataFlowInfo: DataFlowDecorator
 
     // The closest (the most local) levels goes first
     val levels: Sequence<ScopeTowerLevel>
 }
 
-interface DataFlowInfos {
+interface DataFlowDecorator {
     fun getDataFlowValue(receiver: ReceiverValue): DataFlowValue
 
     fun isStableReceiver(receiver: ReceiverValue): Boolean
@@ -63,7 +63,7 @@ interface CandidateWithBoundDispatchReceiver<out D : CallableDescriptor> {
 
     val dispatchReceiver: ReceiverValue?
 
-    val requiresExtensionReceiver: Boolean
+    val requiresExtensionReceiver: Boolean // todo
 }
 
 class ResolutionCandidateStatus(val diagnostics: List<ResolutionDiagnostic>) {
@@ -79,18 +79,20 @@ enum class ResolutionCandidateApplicability {
     RUNTIME_ERROR, // problems with visibility
     IMPOSSIBLE_TO_GENERATE, // access to outer class from nested
     INAPPLICABLE // arguments not matched
+    // todo wrong receiver
 }
 
 abstract class ResolutionDiagnostic(val candidateLevel: ResolutionCandidateApplicability)
 
 // todo error for this access from nested class
 class VisibilityError(val invisibleMember: DeclarationDescriptorWithVisibility): ResolutionDiagnostic(ResolutionCandidateApplicability.RUNTIME_ERROR)
-class UnstableSmartCast(): ResolutionDiagnostic(ResolutionCandidateApplicability.MAY_THROW_RUNTIME_ERROR)
-class ErrorDescriptor(): ResolutionDiagnostic(ResolutionCandidateApplicability.INAPPLICABLE)
 class NestedClassViaInstanceReference(val classDescriptor: ClassDescriptor): ResolutionDiagnostic(ResolutionCandidateApplicability.IMPOSSIBLE_TO_GENERATE)
 class InnerClassViaStaticReference(val classDescriptor: ClassDescriptor): ResolutionDiagnostic(ResolutionCandidateApplicability.IMPOSSIBLE_TO_GENERATE)
 class UnsupportedInnerClassCall(val message: String): ResolutionDiagnostic(ResolutionCandidateApplicability.IMPOSSIBLE_TO_GENERATE)
-class SynthesizedDescriptor(): ResolutionDiagnostic(ResolutionCandidateApplicability.RESOLVED_SYNTHESIZED)
 class UsedSmartCastForDispatchReceiver(val smartCastType: KotlinType): ResolutionDiagnostic(ResolutionCandidateApplicability.RESOLVED_SYNTHESIZED)
+
+object ErrorDescriptorDiagnostic : ResolutionDiagnostic(ResolutionCandidateApplicability.INAPPLICABLE)
+object SynthesizedDescriptorDiagnostic: ResolutionDiagnostic(ResolutionCandidateApplicability.RESOLVED_SYNTHESIZED)
+object UnstableSmartCastDiagnostic: ResolutionDiagnostic(ResolutionCandidateApplicability.MAY_THROW_RUNTIME_ERROR)
 
 
