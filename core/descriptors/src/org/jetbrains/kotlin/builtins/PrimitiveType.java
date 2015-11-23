@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.builtins;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.name.Name;
 
 import java.util.Collections;
@@ -39,10 +40,14 @@ public enum PrimitiveType {
 
     private final Name typeName;
     private final Name arrayTypeName;
+    private final FqName typeFqName;
+    private final FqName arrayTypeFqName;
 
     private PrimitiveType(String typeName) {
         this.typeName = Name.identifier(typeName);
+        this.typeFqName = KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME.child(this.typeName);
         this.arrayTypeName = Name.identifier(typeName + "Array");
+        this.arrayTypeFqName = KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME.child(this.arrayTypeName);
     }
 
     @NotNull
@@ -51,7 +56,17 @@ public enum PrimitiveType {
     }
 
     @NotNull
+    public FqName getTypeFqName() {
+        return typeFqName;
+    }
+
+    @NotNull
     public Name getArrayTypeName() {
         return arrayTypeName;
+    }
+
+    @NotNull
+    public FqName getArrayTypeFqName() {
+        return arrayTypeFqName;
     }
 }
