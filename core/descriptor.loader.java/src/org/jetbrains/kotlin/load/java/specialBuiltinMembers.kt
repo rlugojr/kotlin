@@ -259,7 +259,7 @@ public fun ClassDescriptor.hasRealKotlinSuperClassWithOverrideOf(
 
             if (doesOverrideBuiltinDeclaration) {
                 val containingPackageFragment = DescriptorUtils.getParentOfType(superClassDescriptor, PackageFragmentDescriptor::class.java)
-                if (containingPackageFragment === superClassDescriptor.builtIns.builtInsPackageFragment) return false
+                if (superClassDescriptor.builtIns.isBuiltInPackageFragment(containingPackageFragment)) return false
                 return true
             }
         }

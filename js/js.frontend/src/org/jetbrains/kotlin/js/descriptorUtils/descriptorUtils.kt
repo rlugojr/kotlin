@@ -18,21 +18,21 @@ package org.jetbrains.kotlin.js.descriptorUtils
 
 import com.intellij.openapi.util.text.StringUtil
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.check
 
 public val KotlinType.nameIfStandardType: Name?
     get() {
-        val descriptor = getConstructor().getDeclarationDescriptor()
-
-        if (descriptor?.getContainingDeclaration() == descriptor?.builtIns?.getBuiltInsPackageFragment()) {
-            return descriptor?.getName()
-        }
-
-        return null
+        return constructor.declarationDescriptor
+                ?.check { descriptor ->
+                    descriptor.builtIns.isBuiltInPackageFragment(descriptor.containingDeclaration as? PackageFragmentDescriptor)
+                }
+                ?.name
     }
 
 public fun KotlinType.getJetTypeFqName(printTypeArguments: Boolean): String {
