@@ -1,14 +1,14 @@
 <project name="Update Dependencies" default="update_teamcity" xmlns:if="ant:if" xmlns:unless="ant:unless">
 
     <property name="automerge_dummy" value="This property is used to trick git merge. Do not delete empty lines around."/>
-    <property name="ideaVersion" value="143.1015.7"/>
-    <property name="idea.kotlin.branch" value="beta2"/>
+    <property name="ideaVersion" value="143.1241"/>
+    <property name="idea.kotlin.branch" value="packages"/>
 
 
-    <property name="kotlin.bootstrap.branch" value=""/>
-    <property name="kotlin.bootstrap.branch.locator" value=""/>
-    <property name="kotlin.bootstrap.locator" value="buildType:bt345,tag:bootstrap,status:SUCCESS${kotlin.bootstrap.branch.locator}"/>
-    <property name="kotlin.bootstrap.locator.force" value="false"/>
+    <property name="kotlin.bootstrap.branch" value="rr/packages-base"/>
+    <property name="kotlin.bootstrap.branch.locator" value=",branch:rr/packages-base"/>
+    <property name="kotlin.bootstrap.locator" value="buildType:bt345,status:SUCCESS${kotlin.bootstrap.branch.locator}"/>
+    <property name="kotlin.bootstrap.locator.force" value="true"/>
 
     <property name="markdown.locator" value="buildType:IntelliJMarkdownParser_Build,status:SUCCESS"/>
 
@@ -405,12 +405,13 @@
                 <arg value="${basedir}/dependencies/bootstrap-compiler/Kotlin/kotlinc/lib/kotlin-runtime.jar"/>
             </exec>
 
-            <local name="markdown.need.recompile"/>
+            <local name="markdown.need.recompile" />
             <condition property="markdown.need.recompile">
                 <not>
                     <equals arg1="${markdown.abi.incompatible}" arg2="0"/>
                 </not>
             </condition>
+            <property name="markdown.need.recompile" value="true" />
 
             <sequential if:set="markdown.need.recompile">
                 <echo message="Recompiling intellij-markdown manually"/>
