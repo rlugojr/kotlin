@@ -398,12 +398,13 @@
                 <arg value="${basedir}/dependencies/bootstrap-compiler/Kotlin/kotlinc/lib/kotlin-runtime.jar"/>
             </exec>
 
-            <local name="markdown.need.recompile"/>
+            <local name="markdown.need.recompile" />
             <condition property="markdown.need.recompile">
                 <not>
                     <equals arg1="${markdown.abi.incompatible}" arg2="0"/>
                 </not>
             </condition>
+            <property name="markdown.need.recompile" value="true" />
 
             <sequential if:set="markdown.need.recompile">
                 <echo message="Recompiling intellij-markdown manually"/>
