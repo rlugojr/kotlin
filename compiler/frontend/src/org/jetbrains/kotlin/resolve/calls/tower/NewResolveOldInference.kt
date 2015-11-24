@@ -57,23 +57,24 @@ class NewResolveOldInference(
     ): OverloadResolutionResultsImpl<*> {
         val explicitReceiver = context.call.explicitReceiver.check { it.exists() }
 
-        val resolveTower = ScopeTowerImpl(context, explicitReceiver, context.call.createLookupLocation())
+        val scopeTower = ScopeTowerImpl(context, explicitReceiver, context.call.createLookupLocation())
 
-        val baseContext = Context(resolveTower, name, context, tracing)
+        val baseContext = Context(scopeTower, name, context, tracing)
 
         val collector =
             when (kind) {
-                CallResolver.ResolveKind.VARIABLE -> createVariableCollector(baseContext, explicitReceiver)
-                CallResolver.ResolveKind.FUNCTION -> createFunctionTowerCandidatesCollector(baseContext, explicitReceiver)
+                CallResolver.ResolveKind.VARIABLE -> createVariableProcessor(baseContext, explicitReceiver)
+                CallResolver.ResolveKind.FUNCTION -> createFunctionTowerProcessor(baseContext, explicitReceiver)
                 CallResolver.ResolveKind.CALLABLE_REFERENCE -> CompositeScopeTowerProcessor(
-                        createFunctionTowerCandidatesCollector(baseContext, explicitReceiver),
-                        createVariableCollector(baseContext, explicitReceiver)
+                        createFunctionTowerProcessor(baseContext, explicitReceiver),
+                        createVariableProcessor(baseContext, explicitReceiver)
                 )
                 CallResolver.ResolveKind.INVOKE -> {
+                    // todo
                     val call = (context.call as? CallTransformer.CallForImplicitInvoke).sure {
                         "Call should be CallForImplicitInvoke, but it is: ${context.call}"
                     }
-                    createCollectorWithReceiverValueOrEmpty(call.explicitReceiver.check { it.exists() }) {
+                    createCollectorWithReceiverValueOrEmpty(explicitReceiver) {
                         createCallTowerCollectorsForExplicitInvoke(baseContext, call.dispatchReceiver, it)
                     }
                 }
@@ -92,7 +93,7 @@ class NewResolveOldInference(
     ): ScopeTowerProcessor<Candidate> {
         return if (explicitReceiver is Qualifier) {
             (explicitReceiver as? ClassQualifier)?.classValueReceiver?.let(create)
-            ?: KnownResultProcessorScope<Candidate>(listOf())
+            ?: KnownResultProcessor<Candidate>(listOf())
         }
         else {
             create(explicitReceiver as ReceiverValue?)
@@ -100,17 +101,17 @@ class NewResolveOldInference(
     }
 
 
-    private fun createFunctionTowerCandidatesCollector(baseContext: Context, explicitReceiver: Receiver?): CompositeScopeTowerProcessor<Candidate> {
+    private fun createFunctionTowerProcessor(baseContext: Context, explicitReceiver: Receiver?): CompositeScopeTowerProcessor<Candidate> {
         // a.foo() -- simple function call
-        val simpleFunction = createFunctionCollector(baseContext, explicitReceiver)
+        val simpleFunction = createFunctionProcessor(baseContext, explicitReceiver)
 
         // a.foo() -- property a.foo + foo.invoke()
-        val invokeCollector = InvokeCollectorScope(baseContext, explicitReceiver)
+        val invokeProcessor = InvokeTowerProcessor(baseContext, explicitReceiver)
 
         // a.foo() -- property foo is extension function with receiver a -- a.invoke()
-        val extensionCollector = createCollectorWithReceiverValueOrEmpty(explicitReceiver) { InvokeExtensionCollectorScope(baseContext, it) }
+        val invokeExtensionProcessor = createCollectorWithReceiverValueOrEmpty(explicitReceiver) { InvokeExtensionTowerProcessor(baseContext, it) }
 
-        return CompositeScopeTowerProcessor(simpleFunction, invokeCollector, extensionCollector)
+        return CompositeScopeTowerProcessor(simpleFunction, invokeProcessor, invokeExtensionProcessor)
     }
 
 
@@ -119,7 +120,7 @@ class NewResolveOldInference(
             tracing: TracingStrategy,
             basicCallContext: BasicCallResolutionContext
     ): OverloadResolutionResultsImpl<*> {
-        val resolvedCalls = candidates.map {
+        val resolvedCalls = candidates.mapNotNull {
             val (status, resolvedCall) = it
             if (resolvedCall is VariableAsFunctionResolvedCallImpl) {
                 // todo hacks
@@ -151,10 +152,9 @@ class NewResolveOldInference(
             }
 
             resolvedCall
-        }.filterNotNull()
+        }
 
-        val result = resolutionResultsHandler.computeResultAndReportErrors<CallableDescriptor>(basicCallContext, tracing, resolvedCalls as List<MutableResolvedCall<CallableDescriptor>>)
-        return result
+        return resolutionResultsHandler.computeResultAndReportErrors<CallableDescriptor>(basicCallContext, tracing, resolvedCalls as List<MutableResolvedCall<CallableDescriptor>>)
     }
 
     private data class Candidate(val candidateStatus: ResolutionCandidateStatus, val resolvedCall: MutableResolvedCall<*>)

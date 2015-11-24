@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.utils.addToStdlib.check
 
 
-internal class KnownResultProcessorScope<Candidate>(
+internal class KnownResultProcessor<Candidate>(
         result: Collection<Candidate>
 ): ScopeTowerProcessor<Candidate> {
     var candidates = result
@@ -62,7 +62,7 @@ internal abstract class AbstractScopeTowerProcessor<Candidate>(
     override fun getCandidatesGroups() = listOfNotNull(candidates.check { it.isNotEmpty() })
 }
 
-internal class ExplicitReceiverScopeTowerCandidateCollector<Candidate>(
+internal class ExplicitReceiverScopeTowerProcessor<Candidate>(
         context: TowerContext<Candidate>,
         val explicitReceiver: ReceiverValue,
         val collectCandidates: ScopeTowerLevel.(Name) -> Collection<CandidateWithBoundDispatchReceiver<*>>
@@ -89,7 +89,7 @@ internal class ExplicitReceiverScopeTowerCandidateCollector<Candidate>(
     }
 }
 
-private class QualifierScopeTowerCandidateCollector<Candidate>(
+private class QualifierScopeTowerProcessor<Candidate>(
         context: TowerContext<Candidate>,
         val qualifier: QualifierReceiver,
         val collectCandidates: ScopeTowerLevel.(Name) -> Collection<CandidateWithBoundDispatchReceiver<*>>
@@ -138,22 +138,22 @@ private class NoExplicitReceiverScopeTowerCandidateCollector<Candidate>(
 
 }
 
-private fun <Candidate> createSimpleCollector(
+private fun <Candidate> createSimpleProcessor(
         context: TowerContext<Candidate>,
         explicitReceiver: Receiver?,
         collectCandidates: ScopeTowerLevel.(Name) -> Collection<CandidateWithBoundDispatchReceiver<*>>
 ) : ScopeTowerProcessor<Candidate> {
     if (explicitReceiver is ReceiverValue) {
-        return ExplicitReceiverScopeTowerCandidateCollector(context, explicitReceiver, collectCandidates)
+        return ExplicitReceiverScopeTowerProcessor(context, explicitReceiver, collectCandidates)
     }
     else if (explicitReceiver is QualifierReceiver) {
-        val qualifierCollector = QualifierScopeTowerCandidateCollector(context, explicitReceiver, collectCandidates)
+        val qualifierCollector = QualifierScopeTowerProcessor(context, explicitReceiver, collectCandidates)
 
         // todo enum entry, object.
-        val companionObject = (explicitReceiver as? ClassQualifier)?.classValueReceiver ?: return qualifierCollector
+        val classValue = (explicitReceiver as? ClassQualifier)?.classValueReceiver ?: return qualifierCollector
         return CompositeScopeTowerProcessor(
                 qualifierCollector,
-                ExplicitReceiverScopeTowerCandidateCollector(context, companionObject, collectCandidates)
+                ExplicitReceiverScopeTowerProcessor(context, classValue, collectCandidates)
         )
     }
     else {
@@ -164,8 +164,8 @@ private fun <Candidate> createSimpleCollector(
     }
 }
 
-internal fun <Candidate> createVariableCollector(context: TowerContext<Candidate>, explicitReceiver: Receiver?)
-        = createSimpleCollector(context, explicitReceiver, ScopeTowerLevel::getVariables)
+internal fun <Candidate> createVariableProcessor(context: TowerContext<Candidate>, explicitReceiver: Receiver?)
+        = createSimpleProcessor(context, explicitReceiver, ScopeTowerLevel::getVariables)
 
-internal fun <Candidate> createFunctionCollector(context: TowerContext<Candidate>, explicitReceiver: Receiver?)
-        = createSimpleCollector(context, explicitReceiver, ScopeTowerLevel::getFunctions)
+internal fun <Candidate> createFunctionProcessor(context: TowerContext<Candidate>, explicitReceiver: Receiver?)
+        = createSimpleProcessor(context, explicitReceiver, ScopeTowerLevel::getFunctions)
