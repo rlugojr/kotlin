@@ -15,7 +15,7 @@ public fun typeof(a: Any?): String = noImpl
 @native
 public val undefined: Nothing? = noImpl
 
-@native operator fun <K, V> MutableMap<K, V>.set(key: K, value: V): V? = noImpl
+@native public operator fun <K, V> MutableMap<K, V>.set(key: K, value: V): Unit = noImpl
 
 @library
 public fun println() {}
