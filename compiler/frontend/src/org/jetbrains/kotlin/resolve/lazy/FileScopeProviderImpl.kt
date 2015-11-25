@@ -106,9 +106,10 @@ public open class FileScopeProviderImpl(
 
         scope = LazyImportScope(scope, aliasImportResolver, LazyImportScope.FilteringKind.ALL, "Alias imports in $debugName")
 
+        // todo
         val lexicalScope = object : BaseLexicalScope(scope, packageFragment) {
             override val kind: LexicalScopeKind
-                get() = LexicalScopeKind.FILE
+                get() = LexicalScopeKind.EMPTY
 
             override fun printStructure(p: Printer) {
                 p.println("File top-level scope (empty)")
