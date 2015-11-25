@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.MemberComparator
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
+import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.MultifileClass
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.MultifileClassPart
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.OtherOrigin
@@ -50,6 +51,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Deserializ
 import org.jetbrains.org.objectweb.asm.MethodVisitor
 import org.jetbrains.org.objectweb.asm.Opcodes
 import org.jetbrains.org.objectweb.asm.Type
+import org.jetbrains.org.objectweb.asm.commons.InstructionAdapter
 import java.util.*
 
 public class MultifileClassCodegen(
@@ -92,6 +94,14 @@ public class MultifileClassCodegen(
         if (singleSourceFile != null) {
             classBuilder.visitSource(singleSourceFile.name, null)
         }
+
+        val mv = classBuilder.newMethod(JvmDeclarationOrigin.NO_ORIGIN, Opcodes.ACC_PUBLIC, "<init>", "()V", null, null)
+        val v = InstructionAdapter(mv)
+        v.load(0, facadeClassType)
+        v.invokespecial("java/lang/Object", "<init>", "()V", false)
+        v.visitInsn(Opcodes.RETURN)
+        FunctionCodegen.endVisit(v, "multifile class constructor", files.first())
+
         classBuilder
     }
 
@@ -279,7 +289,8 @@ public class MultifileClassCodegen(
     }
 
     companion object {
-        private val FACADE_CLASS_ATTRIBUTES = Opcodes.ACC_PUBLIC or Opcodes.ACC_FINAL
+        // TODO: private val GENERATE_OPEN_FACADES = System.getProperty("")
+        private val FACADE_CLASS_ATTRIBUTES = Opcodes.ACC_PUBLIC // or Opcodes.ACC_FINAL
 
         private fun getOnlyPackageFragment(packageFqName: FqName, files: Collection<KtFile>, bindingContext: BindingContext): PackageFragmentDescriptor? {
             val fragments = SmartList<PackageFragmentDescriptor>()
