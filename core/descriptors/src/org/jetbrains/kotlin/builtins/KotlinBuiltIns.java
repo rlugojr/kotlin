@@ -157,11 +157,13 @@ public abstract class KotlinBuiltIns {
         public final FqName mustBeDocumented = annotationName("MustBeDocumented");
         public final FqName unsafeVariance = fqName("UnsafeVariance");
 
+        public final FqName iterator = collectionsFqName("Iterator");
         public final FqName iterable = collectionsFqName("Iterable");
         public final FqName collection = collectionsFqName("Collection");
         public final FqName list = collectionsFqName("List");
         public final FqName set = collectionsFqName("Set");
         public final FqName map = collectionsFqName("Map");
+        public final FqName mutableIterator = collectionsFqName("MutableIterator");
         public final FqName mutableIterable = collectionsFqName("MutableIterable");
         public final FqName mutableCollection = collectionsFqName("MutableCollection");
         public final FqName mutableList = collectionsFqName("MutableList");
