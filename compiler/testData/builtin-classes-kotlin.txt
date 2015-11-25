@@ -18,7 +18,7 @@ public final class Array</*0*/ T> : kotlin.Cloneable {
         public final fun <get-size>(): kotlin.Int
     public open override /*1*/ fun clone(): kotlin.Array<T>
     public final operator fun get(/*0*/ index: kotlin.Int): T
-    public final operator fun iterator(): kotlin.Iterator<T>
+    public final operator fun iterator(): kotlin.collections.Iterator<T>
     public final operator fun set(/*0*/ index: kotlin.Int, /*1*/ value: T): kotlin.Unit
 }
 
@@ -155,15 +155,6 @@ public interface CharSequence {
 
 public interface Cloneable {
     protected open fun clone(): kotlin.Any
-}
-
-public interface Collection</*0*/ out E> : kotlin.Iterable<E> {
-    public abstract val size: kotlin.Int
-        public abstract fun <get-size>(): kotlin.Int
-    public abstract operator fun contains(/*0*/ element: @kotlin.UnsafeVariance() E): kotlin.Boolean
-    public abstract fun containsAll(/*0*/ elements: kotlin.Collection<@kotlin.UnsafeVariance() E>): kotlin.Boolean
-    public abstract fun isEmpty(): kotlin.Boolean
-    public abstract override /*1*/ fun iterator(): kotlin.Iterator<E>
 }
 
 public interface Comparable</*0*/ in T> {
@@ -477,39 +468,6 @@ public interface IntegerConstants</*0*/ T> {
         public abstract fun <get-MIN_VALUE>(): T
 }
 
-public interface Iterable</*0*/ out T> {
-    public abstract operator fun iterator(): kotlin.Iterator<T>
-}
-
-public interface Iterator</*0*/ out T> {
-    public abstract operator fun hasNext(): kotlin.Boolean
-    public abstract operator fun next(): T
-}
-
-public interface List</*0*/ out E> : kotlin.Collection<E> {
-    public abstract override /*1*/ val size: kotlin.Int
-        public abstract override /*1*/ fun <get-size>(): kotlin.Int
-    public abstract override /*1*/ fun contains(/*0*/ element: @kotlin.UnsafeVariance() E): kotlin.Boolean
-    public abstract override /*1*/ fun containsAll(/*0*/ elements: kotlin.Collection<@kotlin.UnsafeVariance() E>): kotlin.Boolean
-    public abstract operator fun get(/*0*/ index: kotlin.Int): E
-    public abstract fun indexOf(/*0*/ element: @kotlin.UnsafeVariance() E): kotlin.Int
-    public abstract override /*1*/ fun isEmpty(): kotlin.Boolean
-    public abstract override /*1*/ fun iterator(): kotlin.Iterator<E>
-    public abstract fun lastIndexOf(/*0*/ element: @kotlin.UnsafeVariance() E): kotlin.Int
-    public abstract fun listIterator(): kotlin.ListIterator<E>
-    public abstract fun listIterator(/*0*/ index: kotlin.Int): kotlin.ListIterator<E>
-    public abstract fun subList(/*0*/ fromIndex: kotlin.Int, /*1*/ toIndex: kotlin.Int): kotlin.List<E>
-}
-
-public interface ListIterator</*0*/ out T> : kotlin.Iterator<T> {
-    public abstract override /*1*/ fun hasNext(): kotlin.Boolean
-    public abstract fun hasPrevious(): kotlin.Boolean
-    public abstract override /*1*/ fun next(): T
-    public abstract fun nextIndex(): kotlin.Int
-    public abstract fun previous(): T
-    public abstract fun previousIndex(): kotlin.Int
-}
-
 public final class Long : kotlin.Number, kotlin.Comparable<kotlin.Long> {
     /*primary*/ private constructor Long()
     public final infix fun and(/*0*/ other: kotlin.Long): kotlin.Long
@@ -590,132 +548,6 @@ public final class LongArray : kotlin.Cloneable {
     public final operator fun set(/*0*/ index: kotlin.Int, /*1*/ value: kotlin.Long): kotlin.Unit
 }
 
-public interface Map</*0*/ K, /*1*/ out V> {
-    public abstract val entries: kotlin.Set<kotlin.Map.Entry<K, V>>
-        public abstract fun <get-entries>(): kotlin.Set<kotlin.Map.Entry<K, V>>
-    public abstract val keys: kotlin.Set<K>
-        public abstract fun <get-keys>(): kotlin.Set<K>
-    public abstract val size: kotlin.Int
-        public abstract fun <get-size>(): kotlin.Int
-    public abstract val values: kotlin.Collection<V>
-        public abstract fun <get-values>(): kotlin.Collection<V>
-    public abstract fun containsKey(/*0*/ key: K): kotlin.Boolean
-    public abstract fun containsValue(/*0*/ value: @kotlin.UnsafeVariance() V): kotlin.Boolean
-    public abstract operator fun get(/*0*/ key: K): V?
-    public abstract fun isEmpty(): kotlin.Boolean
-
-    public interface Entry</*0*/ out K, /*1*/ out V> {
-        public abstract val key: K
-            public abstract fun <get-key>(): K
-        public abstract val value: V
-            public abstract fun <get-value>(): V
-    }
-}
-
-public interface MutableCollection</*0*/ E> : kotlin.Collection<E>, kotlin.MutableIterable<E> {
-    public abstract override /*1*/ /*fake_override*/ val size: kotlin.Int
-        public abstract override /*1*/ /*fake_override*/ fun <get-size>(): kotlin.Int
-    public abstract fun add(/*0*/ element: E): kotlin.Boolean
-    public abstract fun addAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract fun clear(): kotlin.Unit
-    public abstract override /*1*/ /*fake_override*/ fun contains(/*0*/ element: E): kotlin.Boolean
-    public abstract override /*1*/ /*fake_override*/ fun containsAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract override /*1*/ /*fake_override*/ fun isEmpty(): kotlin.Boolean
-    public abstract override /*2*/ fun iterator(): kotlin.MutableIterator<E>
-    public abstract fun remove(/*0*/ element: E): kotlin.Boolean
-    public abstract fun removeAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract fun retainAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-}
-
-public interface MutableIterable</*0*/ out T> : kotlin.Iterable<T> {
-    public abstract override /*1*/ fun iterator(): kotlin.MutableIterator<T>
-}
-
-public interface MutableIterator</*0*/ out T> : kotlin.Iterator<T> {
-    public abstract override /*1*/ /*fake_override*/ fun hasNext(): kotlin.Boolean
-    public abstract override /*1*/ /*fake_override*/ fun next(): T
-    public abstract fun remove(): kotlin.Unit
-}
-
-public interface MutableList</*0*/ E> : kotlin.List<E>, kotlin.MutableCollection<E> {
-    public abstract override /*2*/ /*fake_override*/ val size: kotlin.Int
-        public abstract override /*2*/ /*fake_override*/ fun <get-size>(): kotlin.Int
-    public abstract override /*1*/ fun add(/*0*/ element: E): kotlin.Boolean
-    public abstract fun add(/*0*/ index: kotlin.Int, /*1*/ element: E): kotlin.Unit
-    public abstract override /*1*/ fun addAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract fun addAll(/*0*/ index: kotlin.Int, /*1*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract override /*1*/ fun clear(): kotlin.Unit
-    public abstract override /*2*/ /*fake_override*/ fun contains(/*0*/ element: E): kotlin.Boolean
-    public abstract override /*2*/ /*fake_override*/ fun containsAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract override /*1*/ /*fake_override*/ fun get(/*0*/ index: kotlin.Int): E
-    public abstract override /*1*/ /*fake_override*/ fun indexOf(/*0*/ element: E): kotlin.Int
-    public abstract override /*2*/ /*fake_override*/ fun isEmpty(): kotlin.Boolean
-    public abstract override /*2*/ /*fake_override*/ fun iterator(): kotlin.MutableIterator<E>
-    public abstract override /*1*/ /*fake_override*/ fun lastIndexOf(/*0*/ element: E): kotlin.Int
-    public abstract override /*1*/ fun listIterator(): kotlin.MutableListIterator<E>
-    public abstract override /*1*/ fun listIterator(/*0*/ index: kotlin.Int): kotlin.MutableListIterator<E>
-    public abstract override /*1*/ fun remove(/*0*/ element: E): kotlin.Boolean
-    public abstract override /*1*/ fun removeAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract fun removeAt(/*0*/ index: kotlin.Int): E
-    public abstract override /*1*/ fun retainAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract operator fun set(/*0*/ index: kotlin.Int, /*1*/ element: E): E
-    public abstract override /*1*/ fun subList(/*0*/ fromIndex: kotlin.Int, /*1*/ toIndex: kotlin.Int): kotlin.MutableList<E>
-}
-
-public interface MutableListIterator</*0*/ T> : kotlin.ListIterator<T>, kotlin.MutableIterator<T> {
-    public abstract fun add(/*0*/ element: T): kotlin.Unit
-    public abstract override /*2*/ fun hasNext(): kotlin.Boolean
-    public abstract override /*1*/ /*fake_override*/ fun hasPrevious(): kotlin.Boolean
-    public abstract override /*2*/ fun next(): T
-    public abstract override /*1*/ /*fake_override*/ fun nextIndex(): kotlin.Int
-    public abstract override /*1*/ /*fake_override*/ fun previous(): T
-    public abstract override /*1*/ /*fake_override*/ fun previousIndex(): kotlin.Int
-    public abstract override /*1*/ fun remove(): kotlin.Unit
-    public abstract fun set(/*0*/ element: T): kotlin.Unit
-}
-
-public interface MutableMap</*0*/ K, /*1*/ V> : kotlin.Map<K, V> {
-    public abstract override /*1*/ val entries: kotlin.MutableSet<kotlin.MutableMap.MutableEntry<K, V>>
-        public abstract override /*1*/ fun <get-entries>(): kotlin.MutableSet<kotlin.MutableMap.MutableEntry<K, V>>
-    public abstract override /*1*/ val keys: kotlin.MutableSet<K>
-        public abstract override /*1*/ fun <get-keys>(): kotlin.MutableSet<K>
-    public abstract override /*1*/ /*fake_override*/ val size: kotlin.Int
-        public abstract override /*1*/ /*fake_override*/ fun <get-size>(): kotlin.Int
-    public abstract override /*1*/ val values: kotlin.MutableCollection<V>
-        public abstract override /*1*/ fun <get-values>(): kotlin.MutableCollection<V>
-    public abstract fun clear(): kotlin.Unit
-    public abstract override /*1*/ /*fake_override*/ fun containsKey(/*0*/ key: K): kotlin.Boolean
-    public abstract override /*1*/ /*fake_override*/ fun containsValue(/*0*/ value: V): kotlin.Boolean
-    public abstract override /*1*/ /*fake_override*/ fun get(/*0*/ key: K): V?
-    public abstract override /*1*/ /*fake_override*/ fun isEmpty(): kotlin.Boolean
-    public abstract fun put(/*0*/ key: K, /*1*/ value: V): V?
-    public abstract fun putAll(/*0*/ from: kotlin.Map<out K, V>): kotlin.Unit
-    public abstract fun remove(/*0*/ key: K): V?
-
-    public interface MutableEntry</*0*/ K, /*1*/ V> : kotlin.Map.Entry<K, V> {
-        public abstract override /*1*/ /*fake_override*/ val key: K
-            public abstract override /*1*/ /*fake_override*/ fun <get-key>(): K
-        public abstract override /*1*/ /*fake_override*/ val value: V
-            public abstract override /*1*/ /*fake_override*/ fun <get-value>(): V
-        public abstract fun setValue(/*0*/ newValue: V): V
-    }
-}
-
-public interface MutableSet</*0*/ E> : kotlin.Set<E>, kotlin.MutableCollection<E> {
-    public abstract override /*2*/ /*fake_override*/ val size: kotlin.Int
-        public abstract override /*2*/ /*fake_override*/ fun <get-size>(): kotlin.Int
-    public abstract override /*1*/ fun add(/*0*/ element: E): kotlin.Boolean
-    public abstract override /*1*/ fun addAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract override /*1*/ fun clear(): kotlin.Unit
-    public abstract override /*2*/ /*fake_override*/ fun contains(/*0*/ element: E): kotlin.Boolean
-    public abstract override /*2*/ /*fake_override*/ fun containsAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract override /*2*/ /*fake_override*/ fun isEmpty(): kotlin.Boolean
-    public abstract override /*2*/ fun iterator(): kotlin.MutableIterator<E>
-    public abstract override /*1*/ fun remove(/*0*/ element: E): kotlin.Boolean
-    public abstract override /*1*/ fun removeAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-    public abstract override /*1*/ fun retainAll(/*0*/ elements: kotlin.Collection<E>): kotlin.Boolean
-}
-
 public final class Nothing {
     /*primary*/ private constructor Nothing()
 }
@@ -731,14 +563,14 @@ public abstract class Number {
     public abstract fun toShort(): kotlin.Short
 }
 
-@kotlin.Deprecated(message = "This generic progression interface is not of much use and will be removed soon. Use concrete progression implementation instead: IntProgression, LongProgression or CharProgression.") public interface Progression</*0*/ out N : kotlin.Any> : kotlin.Iterable<N> {
+@kotlin.Deprecated(message = "This generic progression interface is not of much use and will be removed soon. Use concrete progression implementation instead: IntProgression, LongProgression or CharProgression.") public interface Progression</*0*/ out N : kotlin.Any> : kotlin.collections.Iterable<N> {
     public abstract val end: N
         public abstract fun <get-end>(): N
     public abstract val increment: kotlin.Number
         public abstract fun <get-increment>(): kotlin.Number
     public abstract val start: N
         public abstract fun <get-start>(): N
-    public abstract override /*1*/ /*fake_override*/ fun iterator(): kotlin.Iterator<N>
+    public abstract override /*1*/ /*fake_override*/ fun iterator(): kotlin.collections.Iterator<N>
 }
 
 @kotlin.Deprecated(message = "Please use KProperty instead.", replaceWith = kotlin.ReplaceWith(expression = "KProperty<*>", imports = {"kotlin.reflect.KProperty"})) public interface PropertyMetadata {
@@ -752,15 +584,6 @@ public abstract class Number {
         public final fun <get-expression>(): kotlin.String
     public final val imports: kotlin.Array<out kotlin.String>
         public final fun <get-imports>(): kotlin.Array<out kotlin.String>
-}
-
-public interface Set</*0*/ out E> : kotlin.Collection<E> {
-    public abstract override /*1*/ val size: kotlin.Int
-        public abstract override /*1*/ fun <get-size>(): kotlin.Int
-    public abstract override /*1*/ fun contains(/*0*/ element: @kotlin.UnsafeVariance() E): kotlin.Boolean
-    public abstract override /*1*/ fun containsAll(/*0*/ elements: kotlin.Collection<@kotlin.UnsafeVariance() E>): kotlin.Boolean
-    public abstract override /*1*/ fun isEmpty(): kotlin.Boolean
-    public abstract override /*1*/ fun iterator(): kotlin.Iterator<E>
 }
 
 public final class Short : kotlin.Number, kotlin.Comparable<kotlin.Short> {
