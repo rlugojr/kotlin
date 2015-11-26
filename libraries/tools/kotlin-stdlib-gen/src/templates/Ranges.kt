@@ -19,7 +19,7 @@ fun ranges(): List<GenericFunction> {
         doc(ProgressionsOfPrimitives) { "Returns a progression that goes over the same range in the opposite direction with the same step." }
         returns("TProgression")
         body(ProgressionsOfPrimitives) {
-            "return TProgression.fromClosedRange(last, first, -increment)"
+            "return TProgression.fromClosedRange(last, first, -step)"
         }
     }
 
@@ -31,7 +31,7 @@ fun ranges(): List<GenericFunction> {
         deprecate(Deprecation("This range implementation has unclear semantics and will be removed soon.", level = DeprecationLevel.WARNING))
         annotations("""@Suppress("DEPRECATION_ERROR")""")
         body(ProgressionsOfPrimitives) {
-            "return TProgression.fromClosedRange(last, first, -increment)"
+            "return TProgression.fromClosedRange(last, first, -step)"
         }
     }
 
@@ -45,7 +45,7 @@ fun ranges(): List<GenericFunction> {
         body(ProgressionsOfPrimitives) {
             """
             checkStepIsPositive(step > 0, step)
-            return TProgression.fromClosedRange(first, last, if (increment > 0) step else -step)
+            return TProgression.fromClosedRange(first, last, if (this.step > 0) step else -step)
             """
         }
     }
@@ -62,7 +62,7 @@ fun ranges(): List<GenericFunction> {
         body(ProgressionsOfPrimitives) {
             """
             checkStepIsPositive(step > 0, step)
-            return TProgression.fromClosedRange(first, last, if (increment > 0) step else -step)
+            return TProgression.fromClosedRange(first, last, if (this.step > 0) step else -step)
             """
         }
     }
@@ -80,7 +80,7 @@ fun ranges(): List<GenericFunction> {
 
         doc {
             """
-            Returns a progression from this value down to the specified [to] value with the increment -1.
+            Returns a progression from this value down to the specified [to] value with the step -1.
             The [to] value has to be less than this value.
             """
         }
