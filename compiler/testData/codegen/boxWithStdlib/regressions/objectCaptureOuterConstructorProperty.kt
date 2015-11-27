@@ -1,4 +1,4 @@
-import kotlin.support.*
+import kotlin.collections.*
 
 interface Stream<T> {
     fun iterator(): Iterator<T>
