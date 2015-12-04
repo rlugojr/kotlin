@@ -335,12 +335,11 @@ public class CallExpressionResolver {
         );
 
         for (CallExpressionElement element : processor.getElementChain()) {
-            QualifierReceiver qualifierReceiver = (QualifierReceiver) context.trace.get(BindingContext.QUALIFIER, element.getReceiver());
+            QualifierReceiver qualifierReceiver = (QualifierReceiver) trace.get(BindingContext.QUALIFIER, element.getReceiver());
 
-            Receiver receiver = qualifierReceiver == null
-                                ? ExpressionReceiver.Companion.create(element.getReceiver(),
-                                                                      processor.getReceiverType(),
-                                                                      context.trace.getBindingContext())
+            Receiver receiver = qualifierReceiver == null ? ExpressionReceiver.Companion.create(element.getReceiver(),
+                                                                                                processor.getReceiverType(),
+                                                                                                trace.getBindingContext())
                                 : qualifierReceiver;
 
             boolean lastStage = element.getQualified() == expression;

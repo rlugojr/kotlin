@@ -118,13 +118,12 @@ class CallExpressionProcessor(private val expression: KtQualifiedExpression, pri
     fun processSelector(element: CallExpressionElement, selectorTypeInfo: KotlinTypeInfo) {
         var selectorType = selectorTypeInfo.type
         val selectorExpression = element.selector
-        // For the next stage, if any, current stage selector is the receiver!
-        receiverTypeInfo = selectorTypeInfo
 
         if (element.safe && selectorType != null && TypeUtils.isNullableType(receiverType)) {
             selectorType = TypeUtils.makeNullable(selectorType)
-            receiverTypeInfo = receiverTypeInfo.replaceType(selectorType)
         }
+        // For the next stage, if any, current stage selector is the receiver!
+        receiverTypeInfo = selectorTypeInfo.replaceType(selectorType)
 
         // TODO : this is suspicious: remove this code?
         if (selectorExpression != null && selectorType != null) {
