@@ -32,6 +32,9 @@ public val <T : Any> KClass<T>.java: Class<T>
     @JvmName("getJavaClass")
     get() = (this as ClassBasedDeclarationContainer).jClass as Class<T>
 
+@Deprecated("Provided for binary compatibility", level = DeprecationLevel.HIDDEN)
+public fun <T: Any> KClass<T>.getJava(): Class<T> = this.java
+
 /**
  * Returns a [KClass] instance corresponding to the given Java [Class] instance.
  */
