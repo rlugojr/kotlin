@@ -24,11 +24,11 @@ import org.jetbrains.kotlin.types.KotlinType
 
 
 interface SyntheticScope {
-    fun getSyntheticExtensionProperties(receiverTypes: Collection<KotlinType>, name: Name, location: LookupLocation): Collection<PropertyDescriptor>
-    fun getSyntheticExtensionFunctions(receiverTypes: Collection<KotlinType>, name: Name, location: LookupLocation): Collection<FunctionDescriptor>
+    fun getSyntheticExtensionProperties(resolutionScope: ResolutionScope, name: Name, location: LookupLocation): Collection<PropertyDescriptor>
+    fun getSyntheticExtensionFunctions(resolutionScope: ResolutionScope, name: Name, location: LookupLocation): Collection<FunctionDescriptor>
 
-    fun getSyntheticExtensionProperties(receiverTypes: Collection<KotlinType>): Collection<PropertyDescriptor>
-    fun getSyntheticExtensionFunctions(receiverTypes: Collection<KotlinType>): Collection<FunctionDescriptor>
+    fun getSyntheticExtensionProperties(resolutionScope: ResolutionScope): Collection<PropertyDescriptor>
+    fun getSyntheticExtensionFunctions(resolutionScope: ResolutionScope): Collection<FunctionDescriptor>
 }
 
 interface SyntheticScopes {
@@ -39,15 +39,19 @@ interface SyntheticScopes {
     }
 }
 
+private fun <D> SyntheticScopes.collectAll(
+        receiverTypes: Collection<KotlinType>,
+        collector: SyntheticScope.(ResolutionScope) -> Collection<D>
+) = scopes.flatMap { scope -> receiverTypes.flatMap { scope.collector(it.memberScope) } }.toSet()
 
 fun SyntheticScopes.collectSyntheticExtensionProperties(receiverTypes: Collection<KotlinType>, name: Name, location: LookupLocation)
-        = scopes.flatMap { it.getSyntheticExtensionProperties(receiverTypes, name, location) }
+        = collectAll(receiverTypes) { getSyntheticExtensionProperties(it, name, location) }
 
 fun SyntheticScopes.collectSyntheticExtensionFunctions(receiverTypes: Collection<KotlinType>, name: Name, location: LookupLocation)
-        = scopes.flatMap { it.getSyntheticExtensionFunctions(receiverTypes, name, location) }
+        = collectAll(receiverTypes) { getSyntheticExtensionFunctions(it, name, location) }
 
 fun SyntheticScopes.collectSyntheticExtensionProperties(receiverTypes: Collection<KotlinType>)
-        = scopes.flatMap { it.getSyntheticExtensionProperties(receiverTypes) }
+        = collectAll(receiverTypes) { getSyntheticExtensionProperties(it) }
 
 fun SyntheticScopes.collectSyntheticExtensionFunctions(receiverTypes: Collection<KotlinType>)
-        = scopes.flatMap { it.getSyntheticExtensionFunctions(receiverTypes) }
+        = collectAll(receiverTypes) { getSyntheticExtensionFunctions(it) }

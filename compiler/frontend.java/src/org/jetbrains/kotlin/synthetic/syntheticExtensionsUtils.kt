@@ -17,14 +17,16 @@
 package org.jetbrains.kotlin.synthetic
 
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
+import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
+import org.jetbrains.kotlin.load.java.typeEnhacement.enhanceSignature
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 
-fun FunctionDescriptor.hasJavaOriginInHierarchy(): Boolean {
-    return if (overriddenDescriptors.isEmpty())
-        containingDeclaration is JavaClassDescriptor
+fun FunctionDescriptor.hasJavaNonStaticOriginInHierarchy(): Boolean {
+    return if (overriddenDescriptors.isEmpty()) {
+        original.let { it is JavaMethodDescriptor && !it.isStatic }
+    }
     else
-        overriddenDescriptors.any { it.hasJavaOriginInHierarchy() }
+        overriddenDescriptors.any { it.hasJavaNonStaticOriginInHierarchy() }
 }
 
 fun Visibility.isVisibleOutside() = this != Visibilities.PRIVATE && this != Visibilities.PRIVATE_TO_THIS && this != Visibilities.INVISIBLE_FAKE
