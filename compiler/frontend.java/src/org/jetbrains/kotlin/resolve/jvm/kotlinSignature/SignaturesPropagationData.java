@@ -86,7 +86,8 @@ public class SignaturesPropagationData {
                 Annotations.Companion.getEMPTY(),
                 method.getName(),
                 //TODO: what to do?
-                SourceElement.NO_SOURCE
+                SourceElement.NO_SOURCE,
+                method.isStatic()
         );
         autoMethodDescriptor.initialize(
                 /* receiverParameterType = */ null,

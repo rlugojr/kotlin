@@ -51,6 +51,7 @@ public class JavaMethodDescriptor extends SimpleFunctionDescriptorImpl implement
     }
 
     private ParameterNamesStatus parameterNamesStatus = null;
+    private final boolean isStatic;
 
     protected JavaMethodDescriptor(
             @NotNull DeclarationDescriptor containingDeclaration,
@@ -58,9 +59,11 @@ public class JavaMethodDescriptor extends SimpleFunctionDescriptorImpl implement
             @NotNull Annotations annotations,
             @NotNull Name name,
             @NotNull Kind kind,
-            @NotNull SourceElement source
+            @NotNull SourceElement source,
+            boolean isStatic
     ) {
         super(containingDeclaration, original, annotations, name, kind, source);
+        this.isStatic = isStatic;
     }
 
     @NotNull
@@ -68,9 +71,10 @@ public class JavaMethodDescriptor extends SimpleFunctionDescriptorImpl implement
             @NotNull DeclarationDescriptor containingDeclaration,
             @NotNull Annotations annotations,
             @NotNull Name name,
-            @NotNull SourceElement source
+            @NotNull SourceElement source,
+            boolean isStatic
     ) {
-        return new JavaMethodDescriptor(containingDeclaration, null, annotations, name, Kind.DECLARATION, source);
+        return new JavaMethodDescriptor(containingDeclaration, null, annotations, name, Kind.DECLARATION, source, isStatic);
     }
 
     @NotNull
@@ -107,6 +111,10 @@ public class JavaMethodDescriptor extends SimpleFunctionDescriptorImpl implement
         this.parameterNamesStatus = ParameterNamesStatus.get(hasStableParameterNames, hasSynthesizedParameterNames);
     }
 
+    public boolean isStatic() {
+        return isStatic;
+    }
+
     @NotNull
     @Override
     protected JavaMethodDescriptor createSubstitutedCopy(
@@ -122,8 +130,8 @@ public class JavaMethodDescriptor extends SimpleFunctionDescriptorImpl implement
                 getAnnotations(),
                 newName != null ? newName : getName(),
                 kind,
-                getSourceToUseForCopy(preserveSource, original)
-        );
+                getSourceToUseForCopy(preserveSource, original),
+                isStatic);
         result.setParameterNamesStatus(hasStableParameterNames(), hasSynthesizedParameterNames());
         return result;
     }

@@ -113,7 +113,7 @@ public abstract class LazyJavaScope(protected val c: LazyJavaResolverContext) : 
     fun resolveMethodToFunctionDescriptor(method: JavaMethod): JavaMethodDescriptor {
         val annotations = c.resolveAnnotations(method)
         val functionDescriptorImpl = JavaMethodDescriptor.createJavaMethod(
-                ownerDescriptor, annotations, method.name, c.components.sourceElementFactory.source(method)
+                ownerDescriptor, annotations, method.name, c.components.sourceElementFactory.source(method), method.isStatic
         )
 
         val c = c.child(functionDescriptorImpl, method)

@@ -29,16 +29,17 @@ import org.jetbrains.kotlin.name.Name;
     private final JavaMethodDescriptor declaration;
 
     public SamAdapterFunctionDescriptor(@NotNull JavaMethodDescriptor declaration) {
-        this(declaration.getContainingDeclaration(), null, Kind.SYNTHESIZED, declaration);
+        this(declaration.getContainingDeclaration(), null, Kind.SYNTHESIZED, declaration, declaration.isStatic());
     }
 
     private SamAdapterFunctionDescriptor(
             @NotNull DeclarationDescriptor containingDeclaration,
             @Nullable SimpleFunctionDescriptor original,
             @NotNull Kind kind,
-            @NotNull JavaMethodDescriptor declaration
+            @NotNull JavaMethodDescriptor declaration,
+            boolean isStatic
     ) {
-        super(containingDeclaration, original, declaration.getAnnotations(), declaration.getName(), kind, declaration.getSource());
+        super(containingDeclaration, original, declaration.getAnnotations(), declaration.getName(), kind, declaration.getSource(), isStatic);
         this.declaration = declaration;
         setParameterNamesStatus(declaration.hasStableParameterNames(), declaration.hasSynthesizedParameterNames());
     }
@@ -58,6 +59,6 @@ import org.jetbrains.kotlin.name.Name;
             @Nullable Name newName,
             boolean preserveSource
     ) {
-        return new SamAdapterFunctionDescriptor(newOwner, (SimpleFunctionDescriptor) original, kind, declaration);
+        return new SamAdapterFunctionDescriptor(newOwner, (SimpleFunctionDescriptor) original, kind, declaration, isStatic());
     }
 }
