@@ -1240,18 +1240,6 @@ public inline fun <R> CharSequence.foldIndexed(initial: R, operation: (Int, R, C
 }
 
 /**
- * Accumulates value starting with [initial] value and applying [operation] from left to right
- * to current accumulator value and each character with its index in the original string.
- */
-@Deprecated("Provided for binary compatibility", level = DeprecationLevel.HIDDEN)
-public inline fun <R> String.foldIndexed(initial: R, operation: (Int, R, Char) -> R): R {
-    var index = 0
-    var accumulator = initial
-    for (element in this) accumulator = operation(index++, accumulator, element)
-    return accumulator
-}
-
-/**
  * Accumulates value starting with [initial] value and applying [operation] from right to left to each character and current accumulator value.
  */
 public inline fun <R> CharSequence.foldRight(initial: R, operation: (Char, R) -> R): R {
@@ -1281,21 +1269,6 @@ public inline fun <R> String.foldRight(initial: R, operation: (Char, R) -> R): R
  * to each character with its index in the original char sequence and current accumulator value.
  */
 public inline fun <R> CharSequence.foldRightIndexed(initial: R, operation: (Int, Char, R) -> R): R {
-    var index = lastIndex
-    var accumulator = initial
-    while (index >= 0) {
-        accumulator = operation(index, get(index), accumulator)
-        --index
-    }
-    return accumulator
-}
-
-/**
- * Accumulates value starting with [initial] value and applying [operation] from right to left
- * to each character with its index in the original string and current accumulator value.
- */
-@Deprecated("Provided for binary compatibility", level = DeprecationLevel.HIDDEN)
-public inline fun <R> String.foldRightIndexed(initial: R, operation: (Int, Char, R) -> R): R {
     var index = lastIndex
     var accumulator = initial
     while (index >= 0) {

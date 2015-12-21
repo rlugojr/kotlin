@@ -365,8 +365,7 @@ fun aggregates(): List<GenericFunction> {
     templates add f("foldIndexed(initial: R, operation: (Int, R, T) -> R)") {
         inline(true)
 
-        deprecate(Strings) { forBinaryCompatibility }
-        include(CharSequences, Strings)
+        include(CharSequences)
         doc { f ->
             """
             Accumulates value starting with [initial] value and applying [operation] from left to right
@@ -388,8 +387,7 @@ fun aggregates(): List<GenericFunction> {
     templates add f("foldRightIndexed(initial: R, operation: (Int, T, R) -> R)") {
         inline(true)
 
-        deprecate(Strings) { forBinaryCompatibility }
-        only(CharSequences, Strings, Lists, ArraysOfObjects, ArraysOfPrimitives)
+        only(CharSequences, Lists, ArraysOfObjects, ArraysOfPrimitives)
         doc { f ->
             """
             Accumulates value starting with [initial] value and applying [operation] from right to left
