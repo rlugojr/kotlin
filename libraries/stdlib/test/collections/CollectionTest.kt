@@ -222,11 +222,9 @@ class CollectionTest {
             list.reduceIndexed { index, a, b -> if (index == 3) a else a + b }
         }
 
-        //        TODO replace with more accurate version when KT-5987 will be fixed
-        //        failsWith(javaClass<UnsupportedOperationException>()) {
-        assertFails {
-            run { arrayListOf<Int>().reduceIndexed { index, a, b -> a + b } }
-        }
+        assertTrue(assertFails {
+            arrayListOf<Int>().reduceIndexed { index, a, b -> a + b }
+        } is UnsupportedOperationException)
     }
 
     @test fun reduceRightIndexed() {
@@ -235,11 +233,9 @@ class CollectionTest {
             list.reduceRightIndexed { index, a, b -> if (index == 0) b else a + b }
         }
 
-        //        TODO replace with more accurate version when KT-5987 will be fixed
-        //        failsWith(javaClass<UnsupportedOperationException>()) {
-        assertFails {
-            run { arrayListOf<Int>().reduceRightIndexed { index, a, b -> a + b } }
-        }
+        assertTrue(assertFails {
+            arrayListOf<Int>().reduceRightIndexed { index, a, b -> a + b }
+        } is UnsupportedOperationException)
     }
 
     @test fun reduce() {
@@ -248,11 +244,9 @@ class CollectionTest {
             list.reduce { a, b -> a + b }
         }
 
-        //        TODO replace with more accurate version when KT-5987 will be fixed
-        //        failsWith(javaClass<UnsupportedOperationException>()) {
-        assertFails {
-            run { arrayListOf<Int>().reduce { a, b -> a + b } }
-        }
+        assertTrue(assertFails {
+            arrayListOf<Int>().reduce { a, b -> a + b }
+        } is UnsupportedOperationException)
     }
 
     @test fun reduceRight() {
@@ -261,11 +255,9 @@ class CollectionTest {
             list.reduceRight { a, b -> a + b }
         }
 
-        //        TODO replace with more accurate version when KT-5987 will be fixed
-        //        failsWith(javaClass<UnsupportedOperationException>()) {
-        assertFails {
-            run { arrayListOf<Int>().reduceRight { a, b -> a + b } }
-        }
+        assertTrue(assertFails {
+            arrayListOf<Int>().reduceRight { a, b -> a + b }
+        } is UnsupportedOperationException)
     }
 
     @test fun groupBy() {
