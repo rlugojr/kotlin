@@ -131,14 +131,14 @@ private object NoDeclarationDescriptorsChecker {
 
     private val checkedQuickFixClasses = Collections.synchronizedSet(HashSet<Class<*>>())
 
-    fun check(quickFixClass: Class<*>) {
+    fun check(quickFixClass: Class<in Nothing>) { // workaround for KT-8647 Incorrect unresolved reference caused by type projections
         if (!checkedQuickFixClasses.add(quickFixClass)) return
 
         for (field in quickFixClass.declaredFields) {
             checkType(field.genericType, field)
         }
 
-        @Suppress("UNNECESSARY_SAFE_CALL") // Wrong UNNECESSARY_SAFE_CALL
+        @Suppress("UNNECESSARY_SAFE_CALL") // Wrong UNNECESSARY_SAFE_CALL KT-9294
         quickFixClass.superclass?.let { check(it) }
     }
 

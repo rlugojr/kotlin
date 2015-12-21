@@ -250,7 +250,7 @@ public object KotlinCompilerRunner {
     private fun collectFieldsToCopy(clazz: Class<*>): List<Field> {
         val fromFields = ArrayList<Field>()
 
-        var currentClass: Class<*>? = clazz
+        var currentClass: Class<in Nothing>? = clazz // workaround for KT-8647 Incorrect unresolved reference caused by type projections
         while (currentClass != null) {
             for (field in currentClass.declaredFields) {
                 val modifiers = field.modifiers

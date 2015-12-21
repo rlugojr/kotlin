@@ -26,7 +26,7 @@ class ReflectionCodeSanityTest : TestCase() {
         val classLoader = ForTestCompileRuntime.runtimeAndReflectJarClassLoader()
 
         val classesToCheck = linkedSetOf<Class<*>>()
-        fun addClassToCheck(klass: Class<*>) {
+        fun addClassToCheck(klass: Class<in Nothing>) { // workaround for KT-8647 Incorrect unresolved reference caused by type projections
             if (classesToCheck.add(klass)) {
                 @Suppress("UNNECESSARY_SAFE_CALL") // https://youtrack.jetbrains.com/issue/KT-9294
                 klass.superclass?.let { addClassToCheck(it) }
