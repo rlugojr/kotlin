@@ -19,13 +19,14 @@ object NumbersTestConstants {
 
 class NumbersTest {
 
+    var one: Int = 1
 
     @test fun intMinMaxValues() {
         assertTrue(Int.MIN_VALUE < 0)
         assertTrue(Int.MAX_VALUE > 0)
 
-        assertEquals(NumbersTestConstants.intMinSucc, Int.MIN_VALUE + 1)
-        assertEquals(NumbersTestConstants.intMaxPred, Int.MAX_VALUE - 1)
+        assertEquals(NumbersTestConstants.intMinSucc, Int.MIN_VALUE + one)
+        assertEquals(NumbersTestConstants.intMaxPred, Int.MAX_VALUE - one)
 
         // overflow behavior
         // doesn't hold for JS Number
@@ -37,8 +38,8 @@ class NumbersTest {
         assertTrue(Long.MIN_VALUE < 0)
         assertTrue(Long.MAX_VALUE > 0)
 
-        assertEquals(NumbersTestConstants.longMinSucc, Long.MIN_VALUE + 1)
-        assertEquals(NumbersTestConstants.longMaxPred, Long.MAX_VALUE - 1)
+        assertEquals(NumbersTestConstants.longMinSucc, Long.MIN_VALUE + one)
+        assertEquals(NumbersTestConstants.longMaxPred, Long.MAX_VALUE - one)
 
         // overflow behavior
         expect(Long.MIN_VALUE) { Long.MAX_VALUE + 1 }
