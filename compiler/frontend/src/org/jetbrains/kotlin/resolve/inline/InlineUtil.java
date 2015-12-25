@@ -89,24 +89,11 @@ public class InlineUtil {
             @NotNull BindingContext bindingContext,
             boolean checkNonLocalReturn
     ) {
-        if (!canBeInlineArgument(argument)) return false;
-
-        KtExpression call = KtPsiUtil.getParentCallIfPresent(argument);
-        if (call != null) {
-            ResolvedCall<?> resolvedCall = CallUtilKt.getResolvedCall(call, bindingContext);
-            if (resolvedCall != null && isInline(resolvedCall.getResultingDescriptor())) {
-                ValueArgument valueArgument = CallUtilKt.getValueArgumentForExpression(resolvedCall.getCall(), argument);
-                if (valueArgument != null) {
-                    ArgumentMapping mapping = resolvedCall.getArgumentMapping(valueArgument);
-                    if (mapping instanceof ArgumentMatch) {
-                        ValueParameterDescriptor parameter = ((ArgumentMatch) mapping).getValueParameter();
-                        if (isInlineLambdaParameter(parameter)) {
-                            return !checkNonLocalReturn || allowsNonLocalReturns(parameter);
-                        }
-                    }
-                }
-            }
+        ValueParameterDescriptor descriptor = getInlineArgumentDescriptor(argument, bindingContext);
+        if (descriptor != null) {
+            return !checkNonLocalReturn || allowsNonLocalReturns(descriptor);
         }
+
         return false;
     }
 
