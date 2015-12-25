@@ -110,6 +110,32 @@ public class InlineUtil {
         return false;
     }
 
+    @Nullable
+    public static ValueParameterDescriptor getInlineArgumentDescriptor(
+            @NotNull KtFunction argument,
+            @NotNull BindingContext bindingContext
+    ) {
+        if (!canBeInlineArgument(argument)) return null;
+
+        KtExpression call = KtPsiUtil.getParentCallIfPresent(argument);
+        if (call != null) {
+            ResolvedCall<?> resolvedCall = CallUtilKt.getResolvedCall(call, bindingContext);
+            if (resolvedCall != null && isInline(resolvedCall.getResultingDescriptor())) {
+                ValueArgument valueArgument = CallUtilKt.getValueArgumentForExpression(resolvedCall.getCall(), argument);
+                if (valueArgument != null) {
+                    ArgumentMapping mapping = resolvedCall.getArgumentMapping(valueArgument);
+                    if (mapping instanceof ArgumentMatch) {
+                        ValueParameterDescriptor parameter = ((ArgumentMatch) mapping).getValueParameter();
+                        if (isInlineLambdaParameter(parameter)) {
+                            return parameter;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public static boolean canBeInlineArgument(@Nullable PsiElement functionalExpression) {
         return functionalExpression instanceof KtFunctionLiteral || functionalExpression instanceof KtNamedFunction;
     }
