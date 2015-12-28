@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.idea.decompiler.textBuilder.DecompiledText
 import org.jetbrains.kotlin.idea.decompiler.textBuilder.ResolverForDecompiler
 import org.jetbrains.kotlin.idea.decompiler.textBuilder.buildDecompiledText
 import org.jetbrains.kotlin.idea.decompiler.textBuilder.defaultDecompilerRendererOptions
-import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.load.java.JvmBytecodeBinaryVersion
 import org.jetbrains.kotlin.load.kotlin.KotlinBinaryClassCache
 import org.jetbrains.kotlin.load.kotlin.header.isCompatibleClassKind
 import org.jetbrains.kotlin.load.kotlin.header.isCompatibleFileFacadeKind
@@ -89,7 +89,7 @@ fun buildDecompiledTextForClassFile(
         !classHeader.isCompatibleAbiVersion -> {
             DecompiledText(
                     INCOMPATIBLE_ABI_VERSION_COMMENT
-                            .replace(CURRENT_ABI_VERSION_MARKER, JvmAbi.VERSION.toString())
+                            .replace(CURRENT_ABI_VERSION_MARKER, JvmBytecodeBinaryVersion.INSTANCE.toString())
                             .replace(FILE_ABI_VERSION_MARKER, classHeader.version.toString()),
                     mapOf())
         }
