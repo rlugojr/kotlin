@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.load.kotlin.header.KotlinDataSyntheticClassKind
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.DescriptorFactory
@@ -160,6 +161,8 @@ class PropertyReferenceCodegen(
 
     override fun generateKotlinAnnotation() {
         writeKotlinSyntheticClassAnnotation(v, state)
+
+        writeSyntheticClassMetadata(v, KotlinDataSyntheticClassKind.NONE)
     }
 
     fun putInstanceOnStack(): StackValue =

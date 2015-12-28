@@ -19,7 +19,9 @@ package org.jetbrains.kotlin.codegen.when;
 import com.intellij.util.ArrayUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.codegen.ClassBuilder;
+import org.jetbrains.kotlin.codegen.WriteAnnotationUtilKt;
 import org.jetbrains.kotlin.codegen.state.GenerationState;
+import org.jetbrains.kotlin.load.kotlin.header.KotlinDataSyntheticClassKind;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.resolve.constants.EnumValue;
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin;
@@ -58,6 +60,8 @@ public class MappingClassesForWhenByEnumCodegen {
         generateInitialization(cb, mappings);
 
         writeKotlinSyntheticClassAnnotation(cb, state);
+
+        WriteAnnotationUtilKt.writeSyntheticClassMetadata(cb, KotlinDataSyntheticClassKind.NONE);
 
         cb.done();
     }

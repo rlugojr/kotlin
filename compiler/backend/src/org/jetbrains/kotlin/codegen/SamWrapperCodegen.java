@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.fileClasses.JvmFileClassUtil;
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation;
 import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor;
 import org.jetbrains.kotlin.load.kotlin.PackagePartClassUtils;
+import org.jetbrains.kotlin.load.kotlin.header.KotlinDataSyntheticClassKind;
 import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.psi.KtFile;
@@ -95,6 +96,8 @@ public class SamWrapperCodegen {
         cv.visitSource(file.getName(), null);
 
         writeKotlinSyntheticClassAnnotation(cv, state);
+
+        WriteAnnotationUtilKt.writeSyntheticClassMetadata(cv, KotlinDataSyntheticClassKind.NONE);
 
         // e.g. ASM type for Function2
         Type functionAsmType = typeMapper.mapType(functionType);

@@ -29,13 +29,21 @@ class KotlinClassHeader(
         val isInterfaceDefaultImpls: Boolean,
         val isLocalClass: Boolean
 ) {
-    enum class Kind {
-        CLASS,
-        FILE_FACADE,
-        MULTIFILE_CLASS,
-        MULTIFILE_CLASS_PART,
-        SYNTHETIC_CLASS
+    // See kotlin.Metadata
+    enum class Kind(val id: Int) {
+        CLASS(0),
+        FILE_FACADE(1),
+        SYNTHETIC_CLASS(2),
+        MULTIFILE_CLASS(3),
+        MULTIFILE_CLASS_PART(4),
     }
 
     override fun toString() = "$kind " + (if (isLocalClass) "(local) " else "") + "version=$metadataVersion"
+}
+
+enum class KotlinDataSyntheticClassKind(val id: Int) {
+    NONE(0),
+    FUNCTION(1),
+    LOCAL_CLASS(2),
+    INTERFACE_DEFAULT_IMPLS(3),
 }
