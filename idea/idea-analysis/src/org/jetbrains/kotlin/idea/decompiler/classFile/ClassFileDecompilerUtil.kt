@@ -68,7 +68,7 @@ fun isKotlinInternalCompiledFile(file: VirtualFile): Boolean {
 
     return header.kind == KotlinClassHeader.Kind.SYNTHETIC_CLASS ||
            header.kind == KotlinClassHeader.Kind.MULTIFILE_CLASS_PART ||
-           header.isLocalClass || header.syntheticClassKind == "PACKAGE_PART"
+           header.isLocalClass
 }
 
 object HasCompiledKotlinInJar : JarUserDataManager.JarBooleanPropertyCounter(HasCompiledKotlinInJar::class.simpleName!!) {
