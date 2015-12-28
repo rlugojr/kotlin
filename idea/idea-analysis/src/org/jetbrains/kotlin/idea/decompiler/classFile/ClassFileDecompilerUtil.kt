@@ -49,7 +49,7 @@ fun isKotlinWithCompatibleAbiVersion(file: VirtualFile): Boolean {
     if (!isKotlinJvmCompiledFile(file)) return false
 
     val kotlinClass = KotlinBinaryClassCache.getKotlinBinaryClass(file)
-    return kotlinClass != null && kotlinClass.classHeader.version.isCompatible()
+    return kotlinClass != null && kotlinClass.classHeader.metadataVersion.isCompatible()
 }
 
 /**

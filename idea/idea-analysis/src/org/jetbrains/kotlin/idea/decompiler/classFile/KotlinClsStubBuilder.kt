@@ -30,9 +30,7 @@ import org.jetbrains.kotlin.load.kotlin.AbstractBinaryClassAnnotationAndConstant
 import org.jetbrains.kotlin.load.kotlin.KotlinBinaryClassCache
 import org.jetbrains.kotlin.load.kotlin.KotlinClassFinder
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
-import org.jetbrains.kotlin.load.kotlin.header.isCompatibleClassKind
-import org.jetbrains.kotlin.load.kotlin.header.isCompatibleFileFacadeKind
-import org.jetbrains.kotlin.load.kotlin.header.isCompatibleMultifileClassKind
+import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
@@ -62,12 +60,12 @@ open class KotlinClsStubBuilder : ClsStubBuilder() {
         val header = kotlinBinaryClass.classHeader
         val classId = kotlinBinaryClass.classId
         val packageFqName = classId.packageFqName
-        if (!header.version.isCompatible()) {
+        if (!header.metadataVersion.isCompatible()) {
             return createIncompatibleAbiVersionFileStub()
         }
 
         val components = createStubBuilderComponents(file, packageFqName)
-        if (header.isCompatibleMultifileClassKind()) {
+        if (header.kind == KotlinClassHeader.Kind.MULTIFILE_CLASS) {
             val partFiles = findMultifileClassParts(file, kotlinBinaryClass)
             return createMultifileClassStub(kotlinBinaryClass, partFiles, classId.asSingleFqName(), components)
         }
@@ -82,14 +80,14 @@ open class KotlinClsStubBuilder : ClsStubBuilder() {
             LOG.error("String table not found in file ${file.name}")
             return null
         }
-        return when {
-            header.isCompatibleClassKind() -> {
+        return when (header.kind) {
+            KotlinClassHeader.Kind.CLASS -> {
                 if (header.isLocalClass) return null
                 val (nameResolver, classProto) = JvmProtoBufUtil.readClassDataFrom(annotationData, strings)
                 val context = components.createContext(nameResolver, packageFqName, TypeTable(classProto.typeTable))
                 createTopLevelClassStub(classId, classProto, context)
             }
-            header.isCompatibleFileFacadeKind() -> {
+            KotlinClassHeader.Kind.FILE_FACADE -> {
                 val (nameResolver, packageProto) = JvmProtoBufUtil.readPackageDataFrom(annotationData, strings)
                 val context = components.createContext(nameResolver, packageFqName, TypeTable(packageProto.typeTable))
                 createFileFacadeStub(packageProto, classId.asSingleFqName(), context)

@@ -79,7 +79,7 @@ object KotlinClassFileIndex : KotlinFileIndexBase<KotlinClassFileIndex>(KotlinCl
 
     private val INDEXER = indexer() { fileContent ->
         val kotlinClass = KotlinBinaryClassCache.getKotlinBinaryClass(fileContent.file, fileContent.content)
-        if (kotlinClass != null && kotlinClass.classHeader.version.isCompatible()) kotlinClass.classId.asSingleFqName() else null
+        if (kotlinClass != null && kotlinClass.classHeader.metadataVersion.isCompatible()) kotlinClass.classId.asSingleFqName() else null
     }
 }
 
