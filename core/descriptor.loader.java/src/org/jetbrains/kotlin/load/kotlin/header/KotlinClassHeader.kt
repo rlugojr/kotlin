@@ -35,7 +35,14 @@ class KotlinClassHeader(
         FILE_FACADE(1),
         SYNTHETIC_CLASS(2),
         MULTIFILE_CLASS(3),
-        MULTIFILE_CLASS_PART(4),
+        MULTIFILE_CLASS_PART(4);
+
+        companion object {
+            private val entryById = values()
+
+            @JvmStatic
+            fun getById(id: Int) = entryById.getOrNull(id)
+        }
     }
 
     override fun toString() = "$kind " + (if (isLocalClass) "(local) " else "") + "version=$metadataVersion"
@@ -45,5 +52,12 @@ enum class KotlinDataSyntheticClassKind(val id: Int) {
     NONE(0),
     FUNCTION(1),
     LOCAL_CLASS(2),
-    INTERFACE_DEFAULT_IMPLS(3),
+    INTERFACE_DEFAULT_IMPLS(3);
+
+    companion object {
+        private val entryById = values()
+
+        @JvmStatic
+        fun getById(id: Int) = entryById.getOrNull(id)
+    }
 }
