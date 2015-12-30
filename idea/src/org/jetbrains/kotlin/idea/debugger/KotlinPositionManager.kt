@@ -361,13 +361,13 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
     private fun getInternalClassNameForElement(notPositionedElement: PsiElement?, typeMapper: JetTypeMapper, file: KtFile, isInLibrary: Boolean): Collection<String> {
         val element = getElementToCalculateClassName(notPositionedElement)
         when {
-            element is KtClassOrObject -> return getJvmInternalNameForImpl(typeMapper, element).toCollection()
+            element is KtClassOrObject -> return getJvmInternalNameForImpl(typeMapper, element).toSet()
             element is KtFunctionLiteral -> {
                 val descriptor = InlineUtil.getInlineArgumentDescriptor(element, typeMapper.bindingContext)
                 if (descriptor != null) {
                     val classNamesForParent = getInternalClassNameForElement(element.parent, typeMapper, file, isInLibrary)
                     if (descriptor.isCrossinline) {
-                        return findCrossInlineArguments(element, typeMapper.bindingContext) + classNamesForParent
+                        return findCrossInlineArguments(element, descriptor, typeMapper.bindingContext) + classNamesForParent
                     }
                     return classNamesForParent
                 }
@@ -378,7 +378,7 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
                     }
 
                     val asmType = CodegenBinding.asmTypeForAnonymousClass(typeMapper.bindingContext, element)
-                    return asmType.internalName.toCollection()
+                    return asmType.internalName.toSet()
                 }
             }
             element is KtAnonymousInitializer -> {
@@ -393,7 +393,7 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
                 if (isInPropertyAccessor(notPositionedElement)) {
                     val classOrObject = PsiTreeUtil.getParentOfType(element, KtClassOrObject::class.java)
                     if (classOrObject != null) {
-                        return getJvmInternalNameForImpl(typeMapper, classOrObject).toCollection()
+                        return getJvmInternalNameForImpl(typeMapper, classOrObject).toSet()
                     }
                 }
 
@@ -402,7 +402,7 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
                     return getInternalClassNameForElement(element.parent, typeMapper, file, isInLibrary)
                 }
 
-                return getJvmInternalNameForPropertyOwner(typeMapper, descriptor).toCollection()
+                return getJvmInternalNameForPropertyOwner(typeMapper, descriptor).toSet()
             }
             element is KtNamedFunction -> {
                 if (isInlinedLambda(element, typeMapper.bindingContext)) {
@@ -427,11 +427,11 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
                 }
 
                 val inlinedCalls = findInlinedCalls(element, typeMapper.bindingContext)
-                return (inlinedCalls + parentInternalName.toCollection()).toSet()
+                return inlinedCalls + parentInternalName.toSet()
             }
         }
 
-        return NoResolveFileClassesProvider.getFileClassInternalName(file).toCollection()
+        return NoResolveFileClassesProvider.getFileClassInternalName(file).toSet()
     }
 
     private val TYPES_TO_CALCULATE_CLASSNAME: Array<Class<out KtElement>> =
@@ -486,7 +486,7 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
 
     private fun createKeyForTypeMapper(file: KtFile) = NoResolveFileClassesProvider.getFileClassInternalName(file)
 
-    private fun findInlinedCalls(function: KtNamedFunction, context: BindingContext): Collection<String> {
+    private fun findInlinedCalls(function: KtNamedFunction, context: BindingContext): Set<String> {
         return runReadAction {
             val result = hashSetOf<String>()
 
@@ -507,27 +507,20 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
         }
     }
 
-    private fun findCrossInlineArguments(psiElement: KtFunctionLiteral, context: BindingContext): Set<String> {
+    private fun findCrossInlineArguments(argument: KtFunction, parameterDescriptor: ValueParameterDescriptor, context: BindingContext): Set<String> {
         return runReadAction {
-            val result = hashSetOf<String>()
-
-            if (psiElement is KtFunction) {
-                val descriptor = InlineUtil.getInlineArgumentDescriptor(psiElement, context)
-                if (descriptor != null && descriptor.isCrossinline) {
-                    val source = descriptor.source.getPsi() as? KtParameter
-                    val functionName = source?.ownerFunction?.name
-                    if (functionName != null) {
-                        result.add(getCrossInlineArgumentClassName(psiElement, functionName, context))
-                    }
-                }
+            val source = parameterDescriptor.source.getPsi() as? KtParameter
+            val functionName = source?.ownerFunction?.name
+            if (functionName != null) {
+                return@runReadAction setOf(getCrossInlineArgumentClassName(argument, functionName, context))
             }
-            result
+            return@runReadAction emptySet()
         }
     }
 
-    private fun getCrossInlineArgumentClassName(argument: KtFunction, functionName: String, context: BindingContext): String {
-        val anonymousClassName = CodegenBinding.asmTypeForAnonymousClass(context, argument).internalName
-        val newName = anonymousClassName.substringIndex() + InlineCodegenUtil.INLINE_TRANSFORMATION_SUFFIX + "$" + functionName
+    private fun getCrossInlineArgumentClassName(argument: KtFunction, inlineFunctionName: String, context: BindingContext): String {
+        val anonymousClassNameForArgument = CodegenBinding.asmTypeForAnonymousClass(context, argument).internalName
+        val newName = anonymousClassNameForArgument.substringIndex() + InlineCodegenUtil.INLINE_TRANSFORMATION_SUFFIX + "$" + inlineFunctionName
         return "$newName$*"
     }
 
@@ -554,11 +547,11 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
                 }
     }
 
-    private fun classNamesForCrossInlineParameters(usedParameters: Collection<ValueParameterDescriptor>, context: BindingContext): Collection<String> {
+    private fun classNamesForCrossInlineParameters(usedParameters: Collection<ValueParameterDescriptor>, context: BindingContext): Set<String> {
         // We could calculate className only for one of parameters, because we add '*' to match all crossInlined parameter calls
         val parameter = usedParameters.first()
         val result = hashSetOf<String>()
-        val inlineFunction = parameter.containingDeclaration.source.getPsi() as? KtNamedFunction ?: return emptyList()
+        val inlineFunction = parameter.containingDeclaration.source.getPsi() as? KtNamedFunction ?: return emptySet()
 
         ReferencesSearch.search(inlineFunction).forEach {
             if (!it.isImportUsage()) {
@@ -585,18 +578,16 @@ public class KotlinPositionManager(private val myDebugProcess: DebugProcess) : M
     private fun String.substringIndex(): String {
         if (lastIndexOf("$") < 0) return this
 
-        try {
-            substringAfterLast("$").toInt()
+        val suffix = substringAfterLast("$")
+        if (suffix.all { it.isDigit() }) {
             return substringBeforeLast("$") + "$"
         }
-        catch(e: NumberFormatException) {
-            return this
-        }
+        return this
     }
 
     private fun ReferenceType.containsKotlinStrata() = availableStrata().contains("Kotlin")
 
-    private fun String?.toCollection() = if (this == null) emptySet() else setOf(this)
+    private fun String?.toSet() = if (this == null) emptySet() else setOf(this)
 
     companion object {
         public fun createTypeMapper(file: KtFile): JetTypeMapper {
