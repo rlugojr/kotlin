@@ -81,7 +81,7 @@ object HasCompiledKotlinInJar : JarUserDataManager.JarBooleanPropertyCounter(Has
 fun findMultifileClassParts(file: VirtualFile, multifileClass: KotlinJvmBinaryClass): List<KotlinJvmBinaryClass> {
     val packageFqName = multifileClass.classId.packageFqName
     val partsFinder = DirectoryBasedClassFinder(file.parent!!, packageFqName)
-    val partNames = multifileClass.classHeader.filePartClassNames ?: return emptyList()
+    val partNames = multifileClass.classHeader.data ?: return emptyList()
     return partNames.mapNotNull {
         partsFinder.findKotlinClass(ClassId(packageFqName, Name.identifier(it.substringAfterLast('/'))))
     }

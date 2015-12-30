@@ -48,7 +48,6 @@ public class ReadKotlinClassHeaderAnnotationVisitor implements AnnotationVisitor
     private JvmMetadataVersion metadataVersion = null;
     private JvmBytecodeBinaryVersion bytecodeVersion = null;
     private String multifileClassName = null;
-    private String[] filePartClassNames = null;
     private String[] annotationData = null;
     private String[] strings = null;
     private KotlinClassHeader.Kind headerKind = null;
@@ -74,7 +73,7 @@ public class ReadKotlinClassHeaderAnnotationVisitor implements AnnotationVisitor
                 headerKind,
                 metadataVersion != null ? metadataVersion : JvmMetadataVersion.INVALID_VERSION,
                 bytecodeVersion != null ? bytecodeVersion : JvmBytecodeBinaryVersion.INVALID_VERSION,
-                annotationData, strings, filePartClassNames, multifileClassName, isInterfaceDefaultImpls, isLocalClass
+                annotationData, strings, multifileClassName, isInterfaceDefaultImpls, isLocalClass
         );
     }
 
@@ -140,28 +139,15 @@ public class ReadKotlinClassHeaderAnnotationVisitor implements AnnotationVisitor
         @Nullable
         public AnnotationArrayArgumentVisitor visitArray(@NotNull Name name) {
             String string = name.asString();
-            if (DATA_FIELD_NAME.equals(string)) {
+            if (DATA_FIELD_NAME.equals(string) || FILE_PART_CLASS_NAMES_FIELD_NAME.equals(string)) {
                 return dataArrayVisitor();
             }
             else if (STRINGS_FIELD_NAME.equals(string)) {
                 return stringsArrayVisitor();
             }
-            else if (FILE_PART_CLASS_NAMES_FIELD_NAME.equals(string)) {
-                return filePartClassNamesVisitor();
-            }
             else {
                 return null;
             }
-        }
-
-        @NotNull
-        private AnnotationArrayArgumentVisitor filePartClassNamesVisitor() {
-            return new CollectStringArrayAnnotationVisitor() {
-                @Override
-                protected void visitEnd(@NotNull String[] data) {
-                    filePartClassNames = data;
-                }
-            };
         }
 
         @NotNull

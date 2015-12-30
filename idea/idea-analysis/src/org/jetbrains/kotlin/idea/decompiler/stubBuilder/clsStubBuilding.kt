@@ -80,12 +80,12 @@ fun createMultifileClassStub(
         components: ClsStubBuilderComponents
 ): KotlinFileStubImpl {
     val packageFqName = facadeFqName.parent()
-    val partNames = multifileClass.classHeader.filePartClassNames?.asList()?.map { it.substringAfterLast('/') }
+    val partNames = multifileClass.classHeader.data?.asList()?.map { it.substringAfterLast('/') }
     val fileStub = KotlinFileStubForIde.forMultifileClassStub(facadeFqName, partNames, packageFqName.isRoot)
     setupFileStub(fileStub, packageFqName)
     for (partFile in partFiles) {
         val partHeader = partFile.classHeader
-        val (nameResolver, packageProto) = JvmProtoBufUtil.readPackageDataFrom(partHeader.annotationData!!, partHeader.strings!!)
+        val (nameResolver, packageProto) = JvmProtoBufUtil.readPackageDataFrom(partHeader.data!!, partHeader.strings!!)
         val partContext = components.createContext(nameResolver, packageFqName, TypeTable(packageProto.typeTable))
         val container = ProtoContainer.Package(packageFqName, partContext.nameResolver, partContext.typeTable,
                                                JvmPackagePartSource(partFile.classId))
