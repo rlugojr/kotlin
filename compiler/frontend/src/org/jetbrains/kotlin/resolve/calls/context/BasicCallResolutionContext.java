@@ -81,7 +81,17 @@ public class BasicCallResolutionContext extends CallResolutionContext<BasicCallR
     public static BasicCallResolutionContext create(
             @NotNull ResolutionContext context, @NotNull Call call, @NotNull CheckArgumentTypesMode checkArguments
     ) {
-        return create(context, call, checkArguments, null);
+        return create(context, call, checkArguments, (MutableDataFlowInfoForArguments) null);
+    }
+
+    @NotNull
+    public static BasicCallResolutionContext create(
+            @NotNull ResolutionContext context, @NotNull Call call, @NotNull CheckArgumentTypesMode checkArguments,
+            @NotNull DataFlowInfo initialDataFlowInfoForArguments
+    ) {
+        BasicCallResolutionContext result = create(context, call, checkArguments);
+        result.dataFlowInfoForArguments.setInitialDataFlowInfo(initialDataFlowInfoForArguments);
+        return result;
     }
 
     @Override
