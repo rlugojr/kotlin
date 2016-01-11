@@ -57,8 +57,7 @@ class CandidateResolver(
         private val argumentTypeResolver: ArgumentTypeResolver,
         private val genericCandidateResolver: GenericCandidateResolver,
         private val reflectionTypes: ReflectionTypes,
-        private val additionalTypeCheckers: Iterable<AdditionalTypeChecker>,
-        private val smartCastManager: SmartCastManager
+        private val additionalTypeCheckers: Iterable<AdditionalTypeChecker>
 ) {
 
     fun <D : CallableDescriptor, F : D> performResolutionForCandidateCall(
@@ -373,7 +372,7 @@ class CandidateResolver(
             actualType: KotlinType,
             context: ResolutionContext<*>): KotlinType? {
         val receiverToCast = ExpressionReceiver.create(KtPsiUtil.safeDeparenthesize(expression), actualType, context.trace.bindingContext)
-        val variants = smartCastManager.getSmartCastVariantsExcludingReceiver(context, receiverToCast)
+        val variants = SmartCastManager.getSmartCastVariantsExcludingReceiver(context, receiverToCast)
         for (possibleType in variants) {
             if (KotlinTypeChecker.DEFAULT.isSubtypeOf(possibleType, expectedType)) {
                 return possibleType
@@ -404,7 +403,7 @@ class CandidateResolver(
 
         val erasedReceiverType = getErasedReceiverType(receiverParameterDescriptor, candidateDescriptor)
 
-        if (!smartCastManager.isSubTypeBySmartCastIgnoringNullability(receiverArgument, erasedReceiverType, this)) {
+        if (!SmartCastManager.isSubTypeBySmartCastIgnoringNullability(receiverArgument, erasedReceiverType, this)) {
             RECEIVER_TYPE_ERROR
         } else {
             SUCCESS
@@ -444,7 +443,7 @@ class CandidateResolver(
         val candidateDescriptor = candidateCall.candidateDescriptor
         if (TypeUtils.dependsOnTypeParameters(receiverParameter.type, candidateDescriptor.typeParameters)) return SUCCESS
 
-        val isSubtypeBySmartCastIgnoringNullability = smartCastManager.isSubTypeBySmartCastIgnoringNullability(
+        val isSubtypeBySmartCastIgnoringNullability = SmartCastManager.isSubTypeBySmartCastIgnoringNullability(
                 receiverArgument, receiverParameter.type, this)
 
         if (!isSubtypeBySmartCastIgnoringNullability) {

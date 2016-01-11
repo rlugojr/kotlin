@@ -161,9 +161,8 @@ class ReferenceVariantsHelper(
         val dataFlowInfo = bindingContext.getDataFlowInfo(contextElement)
         val containingDeclaration = resolutionScope.ownerDescriptor
 
-        val smartCastManager = resolutionFacade.frontendService<SmartCastManager>()
         val implicitReceiverTypes = resolutionScope.getImplicitReceiversWithInstance().flatMap {
-            smartCastManager.getSmartCastVariantsWithLessSpecificExcluded(it.value, bindingContext, containingDeclaration, dataFlowInfo)
+            SmartCastManager.getSmartCastVariantsWithLessSpecificExcluded(it.value, bindingContext, containingDeclaration, dataFlowInfo)
         }.toSet()
 
         val descriptors = LinkedHashSet<DeclarationDescriptor>()

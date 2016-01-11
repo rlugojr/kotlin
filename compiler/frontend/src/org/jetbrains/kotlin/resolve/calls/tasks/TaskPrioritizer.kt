@@ -53,7 +53,6 @@ import org.jetbrains.kotlin.util.OperatorNameConventions
 
 class TaskPrioritizer(
         private val storageManager: StorageManager,
-        private val smartCastManager: SmartCastManager,
         private val dynamicCallableDescriptors: DynamicCallableDescriptors,
         private val syntheticScopes: SyntheticScopes
 ) {
@@ -142,7 +141,7 @@ class TaskPrioritizer(
             val value: ReceiverValue?,
             private val context: ResolutionContext<*>
     ) {
-        val types: Collection<KotlinType> by lazy { smartCastManager.getSmartCastVariants(value!!, context) }
+        val types: Collection<KotlinType> by lazy { SmartCastManager.getSmartCastVariants(value!!, context) }
     }
 
     private fun <D : CallableDescriptor, F : D> addCandidatesForExplicitReceiver(

@@ -46,7 +46,7 @@ import static org.jetbrains.kotlin.resolve.BindingContext.SMARTCAST;
 public class SmartCastManager {
 
     @NotNull
-    public List<KotlinType> getSmartCastVariants(
+    public static List<KotlinType> getSmartCastVariants(
             @NotNull ReceiverValue receiverToCast,
             @NotNull ResolutionContext context
     ) {
@@ -54,7 +54,7 @@ public class SmartCastManager {
     }
 
     @NotNull
-    public List<KotlinType> getSmartCastVariants(
+    public static List<KotlinType> getSmartCastVariants(
             @NotNull ReceiverValue receiverToCast,
             @NotNull BindingContext bindingContext,
             @NotNull DeclarationDescriptor containingDeclarationOrModule,
@@ -67,7 +67,7 @@ public class SmartCastManager {
     }
 
     @NotNull
-    public List<KotlinType> getSmartCastVariantsWithLessSpecificExcluded(
+    public static List<KotlinType> getSmartCastVariantsWithLessSpecificExcluded(
             @NotNull ReceiverValue receiverToCast,
             @NotNull BindingContext bindingContext,
             @NotNull DeclarationDescriptor containingDeclarationOrModule,
@@ -92,7 +92,7 @@ public class SmartCastManager {
      * @return variants @param receiverToCast may be cast to according to context dataFlowInfo, receiverToCast itself is NOT included
      */
     @NotNull
-    public Collection<KotlinType> getSmartCastVariantsExcludingReceiver(
+    public static Collection<KotlinType> getSmartCastVariantsExcludingReceiver(
             @NotNull ResolutionContext context,
             @NotNull ReceiverValue receiverToCast
     ) {
@@ -106,20 +106,19 @@ public class SmartCastManager {
      * @return variants @param receiverToCast may be cast to according to @param dataFlowInfo, @param receiverToCast itself is NOT included
      */
     @NotNull
-    public Collection<KotlinType> getSmartCastVariantsExcludingReceiver(
+    public static Collection<KotlinType> getSmartCastVariantsExcludingReceiver(
             @NotNull BindingContext bindingContext,
             @NotNull DeclarationDescriptor containingDeclarationOrModule,
             @NotNull DataFlowInfo dataFlowInfo,
             @NotNull ReceiverValue receiverToCast
     ) {
-        DataFlowValue dataFlowValue = DataFlowValueFactory.createDataFlowValue(
-                receiverToCast, bindingContext, containingDeclarationOrModule
-        );
 
-        return dataFlowInfo.getCollectedTypes(dataFlowValue);
+        return dataFlowInfo.getCollectedTypes(DataFlowValueFactory.createDataFlowValue(
+                receiverToCast, bindingContext, containingDeclarationOrModule
+        ));
     }
 
-    public boolean isSubTypeBySmartCastIgnoringNullability(
+    public static boolean isSubTypeBySmartCastIgnoringNullability(
             @NotNull ReceiverValue receiverArgument,
             @NotNull KotlinType receiverParameterType,
             @NotNull ResolutionContext context
@@ -129,7 +128,7 @@ public class SmartCastManager {
     }
 
     @Nullable
-    private KotlinType getSmartCastSubType(
+    private static KotlinType getSmartCastSubType(
             @NotNull KotlinType receiverParameterType,
             @NotNull Collection<KotlinType> smartCastTypes
     ) {
