@@ -98,10 +98,11 @@ public class CallExpressionResolver {
     public ResolvedCall<FunctionDescriptor> getResolvedCallForFunction(
             @NotNull Call call,
             @NotNull ResolutionContext context, @NotNull CheckArgumentTypesMode checkArguments,
-            @NotNull boolean[] result
+            @NotNull boolean[] result,
+            @NotNull DataFlowInfo initialDataFlowInfoForArguments
     ) {
         OverloadResolutionResults<FunctionDescriptor> results = callResolver.resolveFunctionCall(
-                BasicCallResolutionContext.create(context, call, checkArguments));
+                BasicCallResolutionContext.create(context, call, checkArguments, initialDataFlowInfoForArguments));
         if (!results.isNothing()) {
             result[0] = true;
             return OverloadResolutionResultsUtil.getResultingCall(results, context.contextDependency);
@@ -144,7 +145,8 @@ public class CallExpressionResolver {
     @NotNull
     public KotlinTypeInfo getSimpleNameExpressionTypeInfo(
             @NotNull KtSimpleNameExpression nameExpression, @Nullable Receiver receiver,
-            @Nullable ASTNode callOperationNode, @NotNull ExpressionTypingContext context
+            @Nullable ASTNode callOperationNode, @NotNull ExpressionTypingContext context,
+            @NotNull DataFlowInfo initialDataFlowInfoForArguments
     ) {
         boolean[] result = new boolean[1];
 
@@ -155,7 +157,7 @@ public class CallExpressionResolver {
 
         if (result[0]) {
             temporaryForVariable.commit();
-            return TypeInfoFactoryKt.createTypeInfo(type, context);
+            return TypeInfoFactoryKt.createTypeInfo(type, initialDataFlowInfoForArguments);
         }
 
         Call call = CallMaker.makeCall(nameExpression, receiver, callOperationNode, nameExpression, Collections.<ValueArgument>emptyList());
@@ -163,7 +165,7 @@ public class CallExpressionResolver {
                 context, "trace to resolve as function", nameExpression);
         ResolutionContext newContext = context.replaceTraceAndCache(temporaryForFunction);
         ResolvedCall<FunctionDescriptor> resolvedCall = getResolvedCallForFunction(
-                call, newContext, CheckArgumentTypesMode.CHECK_VALUE_ARGUMENTS, result);
+                call, newContext, CheckArgumentTypesMode.CHECK_VALUE_ARGUMENTS, result, initialDataFlowInfoForArguments);
         if (result[0]) {
             FunctionDescriptor functionDescriptor = resolvedCall != null ? resolvedCall.getResultingDescriptor() : null;
             if (!(functionDescriptor instanceof ConstructorDescriptor)) {
@@ -193,7 +195,8 @@ public class CallExpressionResolver {
             @NotNull KtCallExpression callExpression, @Nullable ReceiverValue receiver,
             @Nullable ASTNode callOperationNode, @NotNull ExpressionTypingContext context
     ) {
-        KotlinTypeInfo typeInfo = getCallExpressionTypeInfoWithoutFinalTypeCheck(callExpression, receiver, callOperationNode, context);
+        KotlinTypeInfo typeInfo = getCallExpressionTypeInfoWithoutFinalTypeCheck(
+                callExpression, receiver, callOperationNode, context, context.dataFlowInfo);
         if (context.contextDependency == INDEPENDENT) {
             dataFlowAnalyzer.checkType(typeInfo.getType(), callExpression, context);
         }
@@ -207,7 +210,8 @@ public class CallExpressionResolver {
     @NotNull
     private KotlinTypeInfo getCallExpressionTypeInfoWithoutFinalTypeCheck(
             @NotNull KtCallExpression callExpression, @Nullable Receiver receiver,
-            @Nullable ASTNode callOperationNode, @NotNull ExpressionTypingContext context
+            @Nullable ASTNode callOperationNode, @NotNull ExpressionTypingContext context,
+            @NotNull DataFlowInfo initialDataFlowInfoForArguments
     ) {
         boolean[] result = new boolean[1];
         Call call = CallMaker.makeCall(receiver, callOperationNode, callExpression);
@@ -217,7 +221,9 @@ public class CallExpressionResolver {
         ResolvedCall<FunctionDescriptor> resolvedCall = getResolvedCallForFunction(
                 call,
                 context.replaceTraceAndCache(temporaryForFunction),
-                CheckArgumentTypesMode.CHECK_VALUE_ARGUMENTS, result);
+                CheckArgumentTypesMode.CHECK_VALUE_ARGUMENTS,
+                result,
+                initialDataFlowInfoForArguments);
         if (result[0]) {
             FunctionDescriptor functionDescriptor = resolvedCall != null ? resolvedCall.getResultingDescriptor() : null;
             temporaryForFunction.commit();
@@ -311,14 +317,16 @@ public class CallExpressionResolver {
             @NotNull Receiver receiver,
             @Nullable ASTNode callOperationNode,
             @Nullable KtExpression selectorExpression,
-            @NotNull ExpressionTypingContext context
+            @NotNull ExpressionTypingContext context,
+            @NotNull DataFlowInfo initialDataFlowInfoForArguments
     ) {
         if (selectorExpression instanceof KtCallExpression) {
             return getCallExpressionTypeInfoWithoutFinalTypeCheck((KtCallExpression) selectorExpression, receiver,
-                                                                  callOperationNode, context);
+                                                                  callOperationNode, context, initialDataFlowInfoForArguments);
         }
         else if (selectorExpression instanceof KtSimpleNameExpression) {
-            return getSimpleNameExpressionTypeInfo((KtSimpleNameExpression) selectorExpression, receiver, callOperationNode, context);
+            return getSimpleNameExpressionTypeInfo(
+                    (KtSimpleNameExpression) selectorExpression, receiver, callOperationNode, context, initialDataFlowInfoForArguments);
         }
         else if (selectorExpression != null) {
             expressionTypingServices.getTypeInfo(selectorExpression, context);
@@ -422,15 +430,15 @@ public class CallExpressionResolver {
                 contextForSelector = contextForSelector.replaceDataFlowInfo(receiverDataFlowInfo);
             }
 
+            DataFlowInfo initialDataFlowInfoForArguments = contextForSelector.dataFlowInfo;
             if (receiver instanceof ReceiverValue) {
                 DataFlowValue receiverDataFlowValue = DataFlowValueFactory.createDataFlowValue((ReceiverValue) receiver, context);
                 // Additional "receiver != null" information
                 // Should be applied if we consider a safe call
                 if (element.getSafe()) {
-                    DataFlowInfo dataFlowInfo = contextForSelector.dataFlowInfo;
-                    if (dataFlowInfo.getPredictableNullability(receiverDataFlowValue).canBeNull()) {
-                        contextForSelector = contextForSelector.replaceDataFlowInfo(
-                                dataFlowInfo.disequate(receiverDataFlowValue, DataFlowValue.nullValue(builtIns)));
+                    if (initialDataFlowInfoForArguments.getPredictableNullability(receiverDataFlowValue).canBeNull()) {
+                        initialDataFlowInfoForArguments = initialDataFlowInfoForArguments.disequate(
+                                receiverDataFlowValue, DataFlowValue.nullValue(builtIns));
                     }
                     else {
                         reportUnnecessarySafeCall(trace, receiverType, element.getNode(), receiver);
@@ -439,8 +447,8 @@ public class CallExpressionResolver {
             }
 
             KtExpression selectorExpression = element.getSelector();
-            KotlinTypeInfo selectorReturnTypeInfo =
-                    getSelectorReturnTypeInfo(receiver, element.getNode(), selectorExpression, contextForSelector);
+            KotlinTypeInfo selectorReturnTypeInfo = getSelectorReturnTypeInfo(
+                    receiver, element.getNode(), selectorExpression, contextForSelector, initialDataFlowInfoForArguments);
             KotlinType selectorReturnType = selectorReturnTypeInfo.getType();
 
             if (qualifierReceiver != null) {

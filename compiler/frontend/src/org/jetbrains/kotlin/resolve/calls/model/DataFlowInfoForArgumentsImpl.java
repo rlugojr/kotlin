@@ -56,8 +56,9 @@ public class DataFlowInfoForArgumentsImpl implements MutableDataFlowInfoForArgum
 
     @Override
     public void setInitialDataFlowInfo(@NotNull DataFlowInfo dataFlowInfo) {
-        //TODO assert initialInfo == null
-        initialInfo = dataFlowInfo;
+        if (initialInfo == null) {
+            initialInfo = dataFlowInfo;
+        }
     }
 
     @NotNull
