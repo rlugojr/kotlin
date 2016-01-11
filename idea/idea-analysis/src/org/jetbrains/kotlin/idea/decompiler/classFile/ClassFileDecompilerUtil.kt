@@ -38,9 +38,12 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
         return false
     }
 
-    val header = KotlinBinaryClassCache.getKotlinBinaryClass(file)?.classHeader
-    return header != null
+    return isKotlinJvmCompiledFileNoCache(file)
 }
+
+@Suppress("NOTHING_TO_INLINE")
+private inline fun isKotlinJvmCompiledFileNoCache(file: VirtualFile): Boolean =
+        KotlinBinaryClassCache.getKotlinBinaryClass(file)?.classHeader != null
 
 /**
  * Checks if this file is a compiled Kotlin class file ABI-compatible with the current plugin
@@ -72,7 +75,7 @@ fun isKotlinInternalCompiledFile(file: VirtualFile): Boolean {
 }
 
 object HasCompiledKotlinInJar : JarUserDataManager.JarBooleanPropertyCounter(HasCompiledKotlinInJar::class.simpleName!!) {
-    override fun hasProperty(file: VirtualFile) = isKotlinJvmCompiledFile(file)
+    override fun hasProperty(file: VirtualFile) = isKotlinJvmCompiledFileNoCache(file)
 
     fun isInNoKotlinJar(file: VirtualFile): Boolean =
             JarUserDataManager.hasFileWithProperty(HasCompiledKotlinInJar, file) == false
