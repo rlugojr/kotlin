@@ -76,11 +76,14 @@ public class JavaElementFinder extends PsiElementFinder implements KotlinFinderM
                 @Nullable
                 @Override
                 public Result<SLRUCache<FindClassesRequest, PsiClass[]>> compute() {
+                    System.out.println("Create cache");
+
                     return new Result<SLRUCache<FindClassesRequest, PsiClass[]>>(
                             new SLRUCache<FindClassesRequest, PsiClass[]>(30, 10) {
                                 @NotNull
                                 @Override
                                 public PsiClass[] createValue(FindClassesRequest key) {
+                                    //System.out.println("Find class: " + key);
                                     return doFindClasses(key.fqName, key.scope);
                                 }
                             },
@@ -103,7 +106,9 @@ public class JavaElementFinder extends PsiElementFinder implements KotlinFinderM
     public PsiClass[] findClasses(@NotNull String qualifiedNameString, @NotNull GlobalSearchScope scope) {
         SLRUCache<FindClassesRequest, PsiClass[]> value = findClassesCache.getValue();
         synchronized (value) {
-            return value.get(new FindClassesRequest(qualifiedNameString, scope));
+            FindClassesRequest request = new FindClassesRequest(qualifiedNameString, scope);
+            //System.out.println("Search: " + request + " " + Thread.currentThread().getName());
+            return value.get(request);
         }
     }
 

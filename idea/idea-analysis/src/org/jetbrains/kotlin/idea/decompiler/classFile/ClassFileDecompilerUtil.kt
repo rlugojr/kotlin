@@ -17,14 +17,26 @@
 package org.jetbrains.kotlin.idea.decompiler.classFile
 
 import com.intellij.ide.highlighter.JavaClassFileType
+import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.ClassFileViewProvider
+import org.jetbrains.kotlin.idea.caches.FileAttributeService
 import org.jetbrains.kotlin.idea.caches.JarUserDataManager
 import org.jetbrains.kotlin.load.kotlin.KotlinBinaryClassCache
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.utils.Profiler
+
+data class IsKotlinBinary(val isKotlinBinary: Boolean, val timestamp: Long)
+
+val KOTLIN_COMPILED_FILE_ATTRIBUTE: String = "kotlin-compiled-file".apply {
+    ServiceManager.getService(FileAttributeService::class.java).register(this, 1)
+}
+
+val KEY = Key.create<IsKotlinBinary>(KOTLIN_COMPILED_FILE_ATTRIBUTE)
 
 /**
  * Checks if this file is a compiled Kotlin class file (not necessarily ABI-compatible with the current plugin)
@@ -38,7 +50,43 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
         return false
     }
 
-    return isKotlinJvmCompiledFileNoCache(file)
+    val profiler = Profiler.create("${file.name} --> Attribute").start()
+    val userData = file.getUserData(KEY)
+    if (userData != null && userData.timestamp == file.timeStamp) {
+        profiler.end()
+        return userData.isKotlinBinary
+    }
+
+    val service = ServiceManager.getService(FileAttributeService::class.java)
+    val attribute = service.readBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file)
+    profiler.end()
+
+    if (attribute != null) return attribute.value!!
+
+    val actualProfile = Profiler.create("${file.name} <-- Read").start()
+    val result = isKotlinJvmCompiledFileNoCache(file)
+
+//    var result = false
+//    try {
+//        FileBasedIndex.getInstance().processValues(IsKotlinCompiledFileIndex.KEY, java.lang.Boolean.TRUE, file, {
+//            file, value ->
+//            result = true
+//            false
+//        }, GlobalSearchScope.FilesScope(null, SmartList(file)))
+//    }
+//    catch (e: IndexNotReadyException) {
+//        val header = KotlinBinaryClassCache.getKotlinBinaryClass(file)?.classHeader
+//        result = header != null
+//    }
+
+
+    actualProfile.end()
+
+//    val isKotlinBinary = header != null
+    service.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, result)
+    file.putUserData(KEY, IsKotlinBinary(result, file.timeStamp))
+
+    return result
 }
 
 @Suppress("NOTHING_TO_INLINE")
