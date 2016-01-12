@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.load.kotlin.ModuleMapping
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.utils.Profiler
 
 data class IsKotlinBinary(val isKotlinBinary: Boolean, val timestamp: Long)
 
@@ -51,23 +50,20 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
         return false
     }
 
-    val profiler = Profiler.create("${file.name} --> Attribute").setPrintAccuracy(5).start()
     val userData = file.getUserData(KEY)
     if (userData != null && userData.timestamp == file.timeStamp) {
-        profiler.end()
         return userData.isKotlinBinary
     }
 
     val service = ServiceManager.getService(FileAttributeService::class.java)
     val attribute = service.readBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file)
-    profiler.end()
 
-    if (attribute != null) return attribute.value!!
+    if (attribute != null) {
+        file.putUserData(KEY, IsKotlinBinary(attribute.value!!, file.timeStamp))
+        return attribute.value
+    }
 
-    val actualProfile = Profiler.create("${file.name} <-- Read").setPrintAccuracy(5).start()
     val result = isKotlinJvmCompiledFileNoCache(file)
-
-    actualProfile.end()
 
     service.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, result)
     file.putUserData(KEY, IsKotlinBinary(result, file.timeStamp))
