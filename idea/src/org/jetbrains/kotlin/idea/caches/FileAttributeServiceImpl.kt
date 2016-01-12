@@ -68,7 +68,7 @@ class FileAttributeServiceImpl : FileAttributeService {
         return data
     }
 
-    private fun <T> read(file: VirtualFile, id: String, readValueFun: (DataInput) -> T?): CachedAttributeData<T>? {
+    private fun <T> read(file: VirtualFile, id: String, readValueFun: (DataInput) -> T): CachedAttributeData<T>? {
         val attribute = attributes[id] ?: throw IllegalArgumentException("Attribute with $id wasn't registered")
 
         val stream = attribute.readAttribute(file) ?: return null
@@ -87,7 +87,10 @@ class FileAttributeServiceImpl : FileAttributeService {
 
     private fun <T: Enum<T>> deserializeEnumValue(i: Int, klass: Class<T>): T {
         val method = klass.getMethod("values")
+
+        @Suppress("UNCHECKED_CAST")
         val values = method.invoke(null) as Array<T>
+
         return values[i]
     }
 }
