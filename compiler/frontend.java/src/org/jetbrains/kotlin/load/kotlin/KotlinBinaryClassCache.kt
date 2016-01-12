@@ -62,6 +62,9 @@ class KotlinBinaryClassCache : Disposable {
                 return requestCache.virtualFileKotlinClass
             }
 
+            if (fileContent == null) {
+                println("READ: $file")
+            }
             val aClass = ApplicationManager.getApplication().runReadAction(Computable {
                 //noinspection deprecation
                 VirtualFileKotlinClass.create(file, fileContent)

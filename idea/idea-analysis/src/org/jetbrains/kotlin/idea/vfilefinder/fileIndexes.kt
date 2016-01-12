@@ -19,7 +19,6 @@ package org.jetbrains.kotlin.idea.vfilefinder
 import com.intellij.ide.highlighter.JavaClassFileType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.indexing.*
-import com.intellij.util.io.BooleanDataDescriptor
 import com.intellij.util.io.KeyDescriptor
 import org.jetbrains.kotlin.idea.decompiler.js.JsMetaFileUtils
 import org.jetbrains.kotlin.idea.decompiler.js.KotlinJavaScriptMetaFileType
@@ -28,39 +27,6 @@ import org.jetbrains.kotlin.name.FqName
 import java.io.DataInput
 import java.io.DataOutput
 import java.util.*
-
-object IsKotlinCompiledFileIndex : ScalarIndexExtension<Boolean>() {
-    val KEY: ID<Boolean, Void> = ID.create(IsKotlinCompiledFileIndex::class.java.canonicalName)
-    private val LOG = Logger.getInstance(IsKotlinCompiledFileIndex::class.java)
-
-    private val KEY_DESCRIPTOR : KeyDescriptor<Boolean> = BooleanDataDescriptor.INSTANCE
-
-    private val _INDEXER: DataIndexer<Boolean, Void, FileContent> = indexer() { fileContent ->
-        val header = KotlinBinaryClassCache.getKotlinBinaryClass(fileContent.file, fileContent.content)?.getClassHeader()
-        header != null
-    }
-
-    private fun indexer(f: (FileContent) -> Boolean): DataIndexer<Boolean, Void, FileContent> =
-            DataIndexer {
-                try {
-                    val value = f(it)
-                    Collections.singletonMap<Boolean, Void>(value, null)
-                }
-                catch (e: Throwable) {
-                    LOG.warn("Error while indexing file " + it.fileName, e)
-                    emptyMap()
-                }
-            }
-
-    override fun dependsOnFileContent(): Boolean = true
-
-    override fun getInputFilter() = FileBasedIndex.InputFilter { file -> file.fileType == JavaClassFileType.INSTANCE }
-    override fun getIndexer() = _INDEXER
-
-    override fun getKeyDescriptor(): KeyDescriptor<Boolean> = KEY_DESCRIPTOR
-    override fun getVersion(): Int = 1
-    override fun getName(): ID<Boolean, Void> = KEY
-}
 
 abstract class KotlinFileIndexBase<T>(private val classOfIndex: Class<T>) : ScalarIndexExtension<FqName>() {
     val KEY: ID<FqName, Void> = ID.create(classOfIndex.canonicalName)

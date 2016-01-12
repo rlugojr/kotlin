@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.idea.caches.FileAttributeService
 import org.jetbrains.kotlin.idea.caches.JarUserDataManager
 import org.jetbrains.kotlin.load.kotlin.KotlinBinaryClassCache
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
+import org.jetbrains.kotlin.load.kotlin.ModuleMapping
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
@@ -50,7 +51,7 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
         return false
     }
 
-    val profiler = Profiler.create("${file.name} --> Attribute").start()
+    val profiler = Profiler.create("${file.name} --> Attribute").setPrintAccuracy(5).start()
     val userData = file.getUserData(KEY)
     if (userData != null && userData.timestamp == file.timeStamp) {
         profiler.end()
@@ -63,26 +64,11 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
 
     if (attribute != null) return attribute.value!!
 
-    val actualProfile = Profiler.create("${file.name} <-- Read").start()
+    val actualProfile = Profiler.create("${file.name} <-- Read").setPrintAccuracy(5).start()
     val result = isKotlinJvmCompiledFileNoCache(file)
-
-//    var result = false
-//    try {
-//        FileBasedIndex.getInstance().processValues(IsKotlinCompiledFileIndex.KEY, java.lang.Boolean.TRUE, file, {
-//            file, value ->
-//            result = true
-//            false
-//        }, GlobalSearchScope.FilesScope(null, SmartList(file)))
-//    }
-//    catch (e: IndexNotReadyException) {
-//        val header = KotlinBinaryClassCache.getKotlinBinaryClass(file)?.classHeader
-//        result = header != null
-//    }
-
 
     actualProfile.end()
 
-//    val isKotlinBinary = header != null
     service.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, result)
     file.putUserData(KEY, IsKotlinBinary(result, file.timeStamp))
 
@@ -123,7 +109,14 @@ fun isKotlinInternalCompiledFile(file: VirtualFile): Boolean {
 }
 
 object HasCompiledKotlinInJar : JarUserDataManager.JarBooleanPropertyCounter(HasCompiledKotlinInJar::class.simpleName!!) {
-    override fun hasProperty(file: VirtualFile) = isKotlinJvmCompiledFileNoCache(file)
+    override fun hasProperty(file: VirtualFile): Boolean {
+        if (file.isDirectory) return false
+        if (file.extension == ModuleMapping.MAPPING_FILE_EXT) {
+            return true
+        }
+
+        return isKotlinJvmCompiledFileNoCache(file)
+    }
 
     fun isInNoKotlinJar(file: VirtualFile): Boolean =
             JarUserDataManager.hasFileWithProperty(HasCompiledKotlinInJar, file) == false
