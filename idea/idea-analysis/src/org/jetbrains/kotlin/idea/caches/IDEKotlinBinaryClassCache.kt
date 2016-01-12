@@ -70,7 +70,7 @@ object IDEKotlinBinaryClassCache {
             return kotlinBinaryClass
         }
         finally {
-            println("$state %.5fs ${file.name} ${file.hashCode()} ${file.path}".format(profiler.pause().cumulative.toFloat() / 1e9))
+            //println("$state %.5fs ${file.name} ${file.hashCode()} ${file.path}".format(profiler.pause().cumulative.toFloat() / 1e9))
 
             profiler.end()
         }
