@@ -59,7 +59,7 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
     val attribute = service.readBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file)
 
     if (attribute != null) {
-        file.putUserData(KEY, IsKotlinBinary(attribute.value!!, file.timeStamp))
+        file.putUserData(KEY, IsKotlinBinary(attribute.value, file.timeStamp))
         return attribute.value
     }
 
