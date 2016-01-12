@@ -22,8 +22,8 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.ClassFileViewProvider
 import org.jetbrains.kotlin.idea.caches.FileAttributeService
+import org.jetbrains.kotlin.idea.caches.IDEKotlinBinaryClassCache
 import org.jetbrains.kotlin.idea.caches.JarUserDataManager
-import org.jetbrains.kotlin.load.kotlin.KotlinBinaryClassCache
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
 import org.jetbrains.kotlin.load.kotlin.ModuleMapping
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
@@ -46,34 +46,33 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
         return false
     }
 
-    if (HasCompiledKotlinInJar.isInNoKotlinJar(file)) {
-        return false
-    }
+//    if (HasCompiledKotlinInJar.isInNoKotlinJar(file)) {
+//        return false
+//    }
 
-    val userData = file.getUserData(KEY)
-    if (userData != null && userData.timestamp == file.timeStamp) {
-        return userData.isKotlinBinary
-    }
-
-    val service = ServiceManager.getService(FileAttributeService::class.java)
-    val attribute = service.readBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file)
-
-    if (attribute != null) {
-        file.putUserData(KEY, IsKotlinBinary(attribute.value, file.timeStamp))
-        return attribute.value
-    }
+//    val userData = file.getUserData(KEY)
+//    if (userData != null && userData.timestamp == file.timeStamp) {
+//        return userData.isKotlinBinary
+//    }
+//
+//    val service = ServiceManager.getService(FileAttributeService::class.java)
+//    val attribute = service.readBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file)
+//
+//    if (attribute != null) {
+//        file.putUserData(KEY, IsKotlinBinary(attribute.value, file.timeStamp))
+//        return attribute.value
+//    }
 
     val result = isKotlinJvmCompiledFileNoCache(file)
 
-    service.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, result)
-    file.putUserData(KEY, IsKotlinBinary(result, file.timeStamp))
+//    service.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, result)
+//    file.putUserData(KEY, IsKotlinBinary(result, file.timeStamp))
 
     return result
 }
 
 @Suppress("NOTHING_TO_INLINE")
-private inline fun isKotlinJvmCompiledFileNoCache(file: VirtualFile): Boolean =
-        KotlinBinaryClassCache.getKotlinBinaryClass(file)?.classHeader != null
+private inline fun isKotlinJvmCompiledFileNoCache(file: VirtualFile): Boolean = IDEKotlinBinaryClassCache.isKotlinBinaryFile(file)
 
 /**
  * Checks if this file is a compiled Kotlin class file ABI-compatible with the current plugin
@@ -81,7 +80,7 @@ private inline fun isKotlinJvmCompiledFileNoCache(file: VirtualFile): Boolean =
 fun isKotlinWithCompatibleAbiVersion(file: VirtualFile): Boolean {
     if (!isKotlinJvmCompiledFile(file)) return false
 
-    val header = KotlinBinaryClassCache.getKotlinBinaryClass(file)?.classHeader
+    val header = IDEKotlinBinaryClassCache.getKotlinBinaryClassHeaderInfo(file)?.classHeader
     return header != null && header.isCompatibleAbiVersion
 }
 
@@ -97,7 +96,7 @@ fun isKotlinInternalCompiledFile(file: VirtualFile): Boolean {
     if (ClassFileViewProvider.isInnerClass(file)) {
         return true
     }
-    val header = KotlinBinaryClassCache.getKotlinBinaryClass(file)?.classHeader ?: return false
+    val header = IDEKotlinBinaryClassCache.getKotlinBinaryClassHeaderInfo(file)?.classHeader ?: return false
 
     return header.kind == KotlinClassHeader.Kind.SYNTHETIC_CLASS ||
            header.kind == KotlinClassHeader.Kind.MULTIFILE_CLASS_PART ||
@@ -118,10 +117,10 @@ object HasCompiledKotlinInJar : JarUserDataManager.JarBooleanPropertyCounter(Has
             JarUserDataManager.hasFileWithProperty(HasCompiledKotlinInJar, file) == false
 }
 
-fun findMultifileClassParts(file: VirtualFile, multifileClass: KotlinJvmBinaryClass): List<KotlinJvmBinaryClass> {
-    val packageFqName = multifileClass.classId.packageFqName
+fun findMultifileClassParts(file: VirtualFile, classId: ClassId, kotlinClassHeader: KotlinClassHeader): List<KotlinJvmBinaryClass> {
+    val packageFqName = classId.packageFqName
     val partsFinder = DirectoryBasedClassFinder(file.parent!!, packageFqName)
-    val partNames = multifileClass.classHeader.filePartClassNames ?: return emptyList()
+    val partNames = kotlinClassHeader.filePartClassNames ?: return emptyList()
     return partNames.mapNotNull {
         partsFinder.findKotlinClass(ClassId(packageFqName, Name.identifier(it.substringAfterLast('/'))))
     }
