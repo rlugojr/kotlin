@@ -91,13 +91,13 @@
                     <postBuildHookScript>verify</postBuildHookScript> <!-- no extension required -->
                 </configuration>
                 <executions>
-                    <execution>
+<!--                    <execution>
                         <id>integration-test</id>
                         <goals>
                             <goal>install</goal>
                             <goal>run</goal>
                         </goals>
-                    </execution>
+                    </execution>-->
                 </executions>
             </plugin>
         </plugins>
