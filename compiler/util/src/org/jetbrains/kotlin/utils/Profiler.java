@@ -166,6 +166,10 @@ public class Profiler {
         return this;
     }
 
+    public long getCumulative() {
+        return cumulative;
+    }
+
     public Profiler mute() {
         mute = true;
         return this;
