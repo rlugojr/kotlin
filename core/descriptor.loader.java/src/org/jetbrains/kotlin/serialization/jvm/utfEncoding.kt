@@ -21,6 +21,12 @@ import java.util.*
 // The maximum possible length of the byte array in the CONSTANT_Utf8_info structure in the bytecode, as per JVMS7 4.4.7
 const val MAX_UTF8_INFO_LENGTH = 65535
 
+// 8-to-7-encoded proto messages can never have the zero byte as the first one, as that would mean that the first byte of the actual data
+// was either 0 or 1 (0000000x). The first byte of the data is the first byte of the varint which encodes the length of the following proto
+// message. The first proto message is the string table and it should contain at least one string, which is impossible to achieve in 1 byte
+internal fun isUtf8Encoded(data: Array<String>) =
+    data.getOrNull(0)?.getOrNull(0) == 0.toChar()
+
 // Leading bytes are prefixed with 110 in UTF-8
 private val LEADING_BYTE_MASK = 0b11000000
 // Continuation bytes are prefixed with 10 in UTF-8
@@ -34,10 +40,16 @@ fun bytesToStrings(bytes: ByteArray): Array<String> {
     val buffer = StringBuilder()
     var bytesInBuffer = 0
 
+    buffer.append(0.toChar())
+    // Zeros effectively occupy two bytes because each 0x0 is converted to 0x80 0xc0 in Modified UTF-8, see JVMS7 4.4.7
+    bytesInBuffer += 2
+
     for (b in bytes) {
         if (b >= 0) {
             buffer.append(b.toChar())
             bytesInBuffer++
+            // Zeros occupy two bytes
+            if (b == 0.toByte()) bytesInBuffer++
         }
         else {
             val int = b.toInt() and 0xFF
@@ -71,27 +83,33 @@ fun bytesToStrings(bytes: ByteArray): Array<String> {
 }
 
 fun stringsToBytes(strings: Array<String>): ByteArray {
-    val resultLength = strings.sumBy { it.length }
+    // Decrement one for the UTF-8 mode marker char
+    val resultLength = strings.sumBy { it.length } - 1
     val result = ByteArray(resultLength)
 
-    var i = 0
-    for (s in strings) {
-        for (si in 0..s.length - 1) {
-            val c = s[si]
+    var end = 0
+    for (i in 0..strings.size - 1) {
+        val s = strings[i]
 
-            val int = c.toInt()
-            if (int <= 127) {
-                result[i++] = c.toByte()
+        // Skip the mode char
+        val start = if (i == 0) 1 else 0
+
+        for (j in start..s.length - 1) {
+            val int = s[j].toInt()
+            result[end++] = if (int <= 127) {
+                int.toByte()
             }
             else {
                 val leadingByte = (int and 0xFFFF) shr 8
                 val continuationByte = int and 0xFF
                 val higherBits = (leadingByte and TWO_LOWER_BITS_MASK) shl 6
                 val lowerBits = continuationByte and SIX_LOWER_BITS_MASK
-                result[i++] = (higherBits or lowerBits).toByte()
+                (higherBits or lowerBits).toByte()
             }
         }
     }
+
+    assert(end == result.size) { "Should have reached the end" }
 
     return result
 }

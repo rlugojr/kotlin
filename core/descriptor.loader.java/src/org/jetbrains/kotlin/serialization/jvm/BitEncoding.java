@@ -162,9 +162,10 @@ public class BitEncoding {
      */
     @NotNull
     public static byte[] decodeBytes(@NotNull String[] data) {
-        if (!FORCE_8TO7_ENCODING) {
+        if (UtfEncodingKt.isUtf8Encoded(data)) {
             return UtfEncodingKt.stringsToBytes(data);
         }
+
         byte[] bytes = combineStringArrayIntoBytes(data);
         // Adding 0x7f modulo max byte value is equivalent to subtracting 1 the same modulo, which is inverse to what happens in encodeBytes
         addModuloByte(bytes, 0x7f);
@@ -178,7 +179,7 @@ public class BitEncoding {
     private static byte[] combineStringArrayIntoBytes(@NotNull String[] data) {
         int resultLength = 0;
         for (String s : data) {
-            assert s.length() <= MAX_UTF8_INFO_LENGTH : "Too long string: " + s.length();
+            assert s.length() <= MAX_UTF8_INFO_LENGTH : "String is too long: " + s.length();
             resultLength += s.length();
         }
 
