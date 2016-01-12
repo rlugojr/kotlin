@@ -23,20 +23,98 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
+import java.util.*
 
 private val JAVA_DEPRECATED = FqName("java.lang.Deprecated")
 
-fun DeclarationDescriptor.getDeprecatedAnnotation(): Pair<AnnotationDescriptor, DeclarationDescriptor>? {
+interface Deprecation {
+    val deprecationLevel: DeprecationLevelValue
+    val message: String
+    val target: DeclarationDescriptor
+
+    fun exists() = deprecationLevel != DeprecationLevelValue.NONE
+}
+
+
+
+private object NoDeprecation : Deprecation {
+    override val deprecationLevel: DeprecationLevelValue
+        get() = DeprecationLevelValue.NONE
+    override val message: String
+        get() = error("Should not be called")
+    override val target: DeclarationDescriptor
+        get() = error("Should not be called")
+}
+
+
+private class DeprecatedByAnnotation(private val annotation: AnnotationDescriptor, override val target: DeclarationDescriptor) : Deprecation {
+    override val deprecationLevel: DeprecationLevelValue
+        get() {
+            val level = annotation.argumentValue("level") as? ClassDescriptor
+
+            return when (level?.name?.asString()) {
+                "WARNING" -> DeprecationLevelValue.WARNING
+                "ERROR" -> DeprecationLevelValue.ERROR
+                "HIDDEN" -> DeprecationLevelValue.HIDDEN
+                else -> DeprecationLevelValue.WARNING
+            }
+        }
+
+    override val message: String
+        get() = annotation.argumentValue("message") as? String ?: ""
+}
+
+private class DeprecatedByOverridden(private val deprecations: Collection<Deprecation>) : Deprecation {
+    init {
+        assert(deprecations.isNotEmpty())
+    }
+
+    override val deprecationLevel: DeprecationLevelValue = deprecations.map(Deprecation::deprecationLevel).min()!!
+
+    override val message: String
+        get() {
+            val message = deprecations.filter { it.deprecationLevel == this.deprecationLevel }.first().message
+            return "${target.name} overrides deprecated member. $message"
+        }
+    override val target: DeclarationDescriptor
+        get() = deprecations.first().target
+}
+
+fun DeclarationDescriptor.getDeprecatedAnnotation(): Deprecation {
+    return getDeprecatedAnnotation(HashSet())
+}
+
+private fun DeclarationDescriptor.getDeprecatedAnnotation(visited: MutableSet<DeclarationDescriptor>): Deprecation {
+    visited.add(this)
+
+    val deprecation = this.getOwnDeprecatedAnnotation()
+    if (deprecation != null) {
+        return deprecation
+    }
+
+    if (this is CallableMemberDescriptor) {
+        val allDeprecations = overriddenDescriptors.map { it.getDeprecatedAnnotation(visited) }.filterNotNull()
+        if (allDeprecations.isEmpty()) {
+            return NoDeprecation
+        }
+
+        return DeprecatedByOverridden(allDeprecations)
+    }
+
+    return NoDeprecation
+}
+
+private fun DeclarationDescriptor.getOwnDeprecatedAnnotation(): DeprecatedByAnnotation? {
     val ownAnnotation = getDeclaredDeprecatedAnnotation(AnnotationUseSiteTarget.getAssociatedUseSiteTarget(this))
     if (ownAnnotation != null)
-        return ownAnnotation to this
+        return DeprecatedByAnnotation(ownAnnotation, this)
 
     when (this) {
         is ConstructorDescriptor -> {
             val classDescriptor = containingDeclaration
             val classAnnotation = classDescriptor.getDeclaredDeprecatedAnnotation()
             if (classAnnotation != null)
-                return classAnnotation to classDescriptor
+                return DeprecatedByAnnotation(classAnnotation, classDescriptor)
         }
         is PropertyAccessorDescriptor -> {
             val propertyDescriptor = correspondingProperty
@@ -44,13 +122,13 @@ fun DeclarationDescriptor.getDeprecatedAnnotation(): Pair<AnnotationDescriptor, 
             val target = if (this is PropertyGetterDescriptor) AnnotationUseSiteTarget.PROPERTY_GETTER else AnnotationUseSiteTarget.PROPERTY_SETTER
             val accessorAnnotation = propertyDescriptor.getDeclaredDeprecatedAnnotation(target, false)
             if (accessorAnnotation != null)
-                return accessorAnnotation to this
+                return DeprecatedByAnnotation(accessorAnnotation, this)
 
             val classDescriptor = containingDeclaration as? ClassDescriptor
             if (classDescriptor != null && classDescriptor.isCompanionObject) {
                 val classAnnotation = classDescriptor.getDeclaredDeprecatedAnnotation()
                 if (classAnnotation != null)
-                    return classAnnotation to classDescriptor
+                    return DeprecatedByAnnotation(classAnnotation, classDescriptor)
             }
         }
     }
@@ -74,24 +152,9 @@ private fun DeclarationDescriptor.getDeclaredDeprecatedAnnotation(
     return null
 }
 
-// Reflects values from kotlin.DeprecationLevel
+// values from kotlin.DeprecationLevel and NONE
 enum class DeprecationLevelValue {
-    WARNING, ERROR, HIDDEN
-}
-
-fun AnnotationDescriptor.getDeprecatedAnnotationLevel(): DeprecationLevelValue? {
-    val level = this.argumentValue("level") as? ClassDescriptor
-
-    return when(level?.name?.asString()) {
-        "WARNING" -> DeprecationLevelValue.WARNING
-        "ERROR" -> DeprecationLevelValue.ERROR
-        "HIDDEN" -> DeprecationLevelValue.HIDDEN
-        else -> null
-    }
-}
-
-fun DeclarationDescriptor.getDeprecatedAnnotationLevel(): DeprecationLevelValue? {
-    return getDeprecatedAnnotation()?.first?.getDeprecatedAnnotationLevel()
+    NONE, WARNING, ERROR, HIDDEN
 }
 
 @Deprecated("Should be removed together with kotlin.HiddenDeclaration")
@@ -100,5 +163,5 @@ private val HIDDEN_ANNOTATION_FQ_NAME = FqName("kotlin.HiddenDeclaration")
 fun DeclarationDescriptor.isHiddenInResolution(): Boolean {
     if (this is FunctionDescriptor && this.isHiddenToOvercomeSignatureClash) return true
     return annotations.findAnnotation(HIDDEN_ANNOTATION_FQ_NAME) != null
-        || getDeprecatedAnnotationLevel() == DeprecationLevelValue.HIDDEN
+           || getDeprecatedAnnotation().deprecationLevel == DeprecationLevelValue.HIDDEN
 }

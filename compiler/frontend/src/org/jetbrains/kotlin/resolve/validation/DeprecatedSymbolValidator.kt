@@ -21,27 +21,23 @@ import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.Deprecation
 import org.jetbrains.kotlin.resolve.DeprecationLevelValue
-import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.getDeprecatedAnnotation
-import org.jetbrains.kotlin.resolve.getDeprecatedAnnotationLevel
 
 class DeprecatedSymbolValidator : SymbolUsageValidator {
 
     override fun validateCall(resolvedCall: ResolvedCall<*>?, targetDescriptor: CallableDescriptor, trace: BindingTrace, element: PsiElement) {
-        val deprecated = targetDescriptor.getDeprecatedAnnotation()
-        if (deprecated != null) {
-            val (annotation, target) = deprecated
-            trace.report(createDeprecationDiagnostic(element, target, annotation))
+        val deprecation = targetDescriptor.getDeprecatedAnnotation()
+        if (deprecation.exists()) {
+            trace.report(createDeprecationDiagnostic(element, deprecation))
         }
         else if (targetDescriptor is PropertyDescriptor) {
             propertyGetterWorkaround(resolvedCall, targetDescriptor, trace, element)
@@ -59,21 +55,19 @@ class DeprecatedSymbolValidator : SymbolUsageValidator {
         if (superExpression != null && superExpression.getCalleeExpression().getConstructorReferenceExpression() == element)
             return
 
-        val deprecated = targetDescriptor.getDeprecatedAnnotation()
-        if (deprecated != null) {
-            val (annotation, target) = deprecated
-            trace.report(createDeprecationDiagnostic(element, target, annotation))
+        val deprecation = targetDescriptor.getDeprecatedAnnotation()
+        if (deprecation.exists()) {
+            trace.report(createDeprecationDiagnostic(element, deprecation))
         }
     }
 
-    private fun createDeprecationDiagnostic(element: PsiElement, descriptor: DeclarationDescriptor, deprecated: AnnotationDescriptor): Diagnostic {
-        val message = deprecated.argumentValue("message") as? String ?: ""
-
-        if (deprecated.getDeprecatedAnnotationLevel() == DeprecationLevelValue.ERROR) {
-            return Errors.DEPRECATION_ERROR.on(element, descriptor.original, message)
+    private fun createDeprecationDiagnostic(element: PsiElement, deprecation: Deprecation): Diagnostic {
+        val targetOriginal = deprecation.target.original
+        if (deprecation.deprecationLevel == DeprecationLevelValue.ERROR) {
+            return Errors.DEPRECATION_ERROR.on(element, targetOriginal, deprecation.message)
         }
 
-        return Errors.DEPRECATION.on(element, descriptor.original, message)
+        return Errors.DEPRECATION.on(element, targetOriginal, deprecation.message)
     }
 
     private val PROPERTY_SET_OPERATIONS = TokenSet.create(KtTokens.EQ, KtTokens.PLUSEQ, KtTokens.MINUSEQ, KtTokens.MULTEQ,
