@@ -68,10 +68,12 @@ public class Profiler {
     private boolean paused = true;
     private StackTraceElement[] stackTrace;
     private boolean mute;
+    private String formatString;
 
     private Profiler(@NotNull String name, @NotNull Logger log) {
         this.name = name;
         this.log = log;
+        setPrintAccuracy(3);
     }
 
     public Profiler recordStackTrace(int depth) {
@@ -227,7 +229,12 @@ public class Profiler {
         return this;
     }
 
-    private static String format(long delta) {
-        return String.format("%.3fs", delta / 1e9);
+    public Profiler setPrintAccuracy(int accuracy) {
+        formatString = "%." + accuracy + "fs";
+        return this;
+    }
+
+    private String format(long delta) {
+        return String.format(formatString, delta / 1e9);
     }
 }
