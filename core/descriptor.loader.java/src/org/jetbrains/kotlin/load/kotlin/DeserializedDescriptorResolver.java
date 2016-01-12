@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.load.kotlin;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import kotlin.jvm.functions.Function0;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.serialization.deserialization.DeserializationCompone
 import org.jetbrains.kotlin.serialization.deserialization.ErrorReporter;
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedPackageMemberScope;
 import org.jetbrains.kotlin.serialization.jvm.JvmProtoBufUtil;
+import org.jetbrains.kotlin.utils.ExceptionUtilsKt;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -62,7 +64,16 @@ public final class DeserializedDescriptorResolver {
         if (data != null) {
             String[] strings = kotlinClass.getClassHeader().getStrings();
             assert strings != null : "String table not found in " + kotlinClass;
-            ClassData classData = JvmProtoBufUtil.readClassDataFrom(data, strings);
+            ClassData classData;
+            try {
+                classData = JvmProtoBufUtil.readClassDataFrom(data, strings);
+            }
+            catch (Exception e) {
+                if (e.getClass() == InvalidProtocolBufferException.class) {
+                    throw new IllegalStateException("Could not read class data from " + kotlinClass.getLocation(), e);
+                }
+                throw ExceptionUtilsKt.rethrow(e);
+            }
             KotlinJvmBinarySourceElement sourceElement = new KotlinJvmBinarySourceElement(kotlinClass);
             return components.getClassDeserializer().deserializeClass(
                     kotlinClass.getClassId(),
@@ -78,7 +89,16 @@ public final class DeserializedDescriptorResolver {
         if (data != null) {
             String[] strings = kotlinClass.getClassHeader().getStrings();
             assert strings != null : "String table not found in " + kotlinClass;
-            PackageData packageData = JvmProtoBufUtil.readPackageDataFrom(data, strings);
+            PackageData packageData;
+            try {
+                packageData = JvmProtoBufUtil.readPackageDataFrom(data, strings);
+            }
+            catch (Exception e) {
+                if (e.getClass() == InvalidProtocolBufferException.class) {
+                    throw new IllegalStateException("Could not read package data from " + kotlinClass.getLocation(), e);
+                }
+                throw ExceptionUtilsKt.rethrow(e);
+            }
             JvmPackagePartSource source = new JvmPackagePartSource(kotlinClass.getClassId());
             return new DeserializedPackageMemberScope(
                     descriptor, packageData.getPackageProto(), packageData.getNameResolver(), source, components,
