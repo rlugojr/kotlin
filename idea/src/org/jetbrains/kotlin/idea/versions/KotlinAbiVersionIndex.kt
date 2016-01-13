@@ -22,7 +22,7 @@ import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.indexing.FileContent
 import org.jetbrains.kotlin.codegen.AsmUtil.asmDescByFqNameWithoutInnerClasses
 import org.jetbrains.kotlin.load.java.JvmAnnotationNames.*
-import org.jetbrains.kotlin.load.java.JvmBytecodeBinaryVersion
+import org.jetbrains.kotlin.load.kotlin.JvmMetadataVersion
 import org.jetbrains.kotlin.serialization.deserialization.BinaryVersion
 import org.jetbrains.org.objectweb.asm.AnnotationVisitor
 import org.jetbrains.org.objectweb.asm.ClassReader
@@ -30,7 +30,7 @@ import org.jetbrains.org.objectweb.asm.ClassVisitor
 import org.jetbrains.org.objectweb.asm.Opcodes
 
 object KotlinAbiVersionIndex : KotlinAbiVersionIndexBase<KotlinAbiVersionIndex>(
-        KotlinAbiVersionIndex::class.java, { JvmBytecodeBinaryVersion.create(it) }
+        KotlinAbiVersionIndex::class.java, { JvmMetadataVersion.create(it) }
 ) {
     override fun getIndexer() = INDEXER
 
@@ -61,7 +61,7 @@ object KotlinAbiVersionIndex : KotlinAbiVersionIndexBase<KotlinAbiVersionIndex>(
                     return object : AnnotationVisitor(Opcodes.ASM5) {
                         override fun visit(name: String, value: Any) {
                             if (name == VERSION_FIELD_NAME && value is IntArray) {
-                                version = JvmBytecodeBinaryVersion.create(value)
+                                version = JvmMetadataVersion.create(value)
                             }
                         }
                     }
@@ -71,7 +71,7 @@ object KotlinAbiVersionIndex : KotlinAbiVersionIndexBase<KotlinAbiVersionIndex>(
 
         if (annotationPresent && version == null) {
             // No version at all because the class is too old, or version is set to something weird
-            version = JvmBytecodeBinaryVersion.INVALID_VERSION
+            version = JvmMetadataVersion.INVALID_VERSION
         }
 
         if (version != null) mapOf(version!! to null) else mapOf()
