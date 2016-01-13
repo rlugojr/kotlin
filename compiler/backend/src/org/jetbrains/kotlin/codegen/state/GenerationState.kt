@@ -109,7 +109,11 @@ class GenerationState @JvmOverloads constructor(
     val classBuilderMode: ClassBuilderMode = builderFactory.classBuilderMode
     val bindingTrace: BindingTrace = DelegatingBindingTrace(bindingContext, "trace in GenerationState")
     val bindingContext: BindingContext = bindingTrace.bindingContext
-    val typeMapper: JetTypeMapper = JetTypeMapper(this.bindingContext, classBuilderMode, fileClassesProvider, getIncrementalCacheForThisTarget(), this.moduleName)
+    val incompatibleClassTracker: IncompatibleClassTracker = IncompatibleClassTrackerImpl()
+    val typeMapper: JetTypeMapper = JetTypeMapper(
+            this.bindingContext, classBuilderMode, fileClassesProvider, getIncrementalCacheForThisTarget(), incompatibleClassTracker,
+            this.moduleName
+    )
     val intrinsics: IntrinsicMethods = IntrinsicMethods()
     val samWrapperClasses: SamWrapperClasses = SamWrapperClasses(this)
     val inlineCycleReporter: InlineCycleReporter = InlineCycleReporter(diagnostics)
