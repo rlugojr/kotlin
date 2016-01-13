@@ -22,6 +22,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -36,6 +37,10 @@ class DeprecatedSymbolValidator : SymbolUsageValidator {
 
     override fun validateCall(resolvedCall: ResolvedCall<*>?, targetDescriptor: CallableDescriptor, trace: BindingTrace, element: PsiElement) {
         val deprecation = targetDescriptor.getDeprecation()
+
+        // avoid duplicating diagnostic when deprecation for property effectively deprecates setter
+        if (targetDescriptor is PropertySetterDescriptor && targetDescriptor.correspondingProperty.getDeprecation() == deprecation) return
+
         if (deprecation.exists()) {
             trace.report(createDeprecationDiagnostic(element, deprecation))
         }

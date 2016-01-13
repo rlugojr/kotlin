@@ -46,7 +46,7 @@ private object NoDeprecation : Deprecation {
 }
 
 
-private class DeprecatedByAnnotation(private val annotation: AnnotationDescriptor, override val target: DeclarationDescriptor) : Deprecation {
+private data class DeprecatedByAnnotation(private val annotation: AnnotationDescriptor, override val target: DeclarationDescriptor) : Deprecation {
     override val deprecationLevel: DeprecationLevelValue
         get() {
             val level = annotation.argumentValue("level") as? ClassDescriptor
@@ -63,7 +63,7 @@ private class DeprecatedByAnnotation(private val annotation: AnnotationDescripto
         get() = annotation.argumentValue("message") as? String ?: ""
 }
 
-private class DeprecatedByOverridden(private val deprecations: Collection<Deprecation>) : Deprecation {
+private data class DeprecatedByOverridden(private val deprecations: Collection<Deprecation>) : Deprecation {
     init {
         assert(deprecations.isNotEmpty())
         assert(deprecations.none {
@@ -144,9 +144,13 @@ private fun DeclarationDescriptor.getDeprecationByAnnotation(): DeprecatedByAnno
             val propertyDescriptor = correspondingProperty
 
             val target = if (this is PropertyGetterDescriptor) AnnotationUseSiteTarget.PROPERTY_GETTER else AnnotationUseSiteTarget.PROPERTY_SETTER
-            val accessorAnnotation = propertyDescriptor.getDeclaredDeprecatedAnnotation(target, false)
-            if (accessorAnnotation != null)
-                return DeprecatedByAnnotation(accessorAnnotation, this)
+            val accessorAnnotationOnProperty = propertyDescriptor.getDeclaredDeprecatedAnnotation(target, false)
+            if (accessorAnnotationOnProperty != null)
+                return DeprecatedByAnnotation(accessorAnnotationOnProperty, this)
+
+            val propertyAnnotation = propertyDescriptor.getDeclaredDeprecatedAnnotation()
+            if (propertyAnnotation != null)
+                return DeprecatedByAnnotation(propertyAnnotation, propertyDescriptor)
 
             val classDescriptor = containingDeclaration as? ClassDescriptor
             if (classDescriptor != null && classDescriptor.isCompanionObject) {
