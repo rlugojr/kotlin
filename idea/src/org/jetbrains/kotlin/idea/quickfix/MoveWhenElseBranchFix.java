@@ -68,7 +68,6 @@ public class MoveWhenElseBranchFix extends KotlinQuickFixAction<KtWhenExpression
         int cursorOffset = editor.getCaretModel().getOffset() - elseEntry.getTextOffset();
 
         PsiElement insertedBranch = getElement().addAfter(elseEntry, lastEntry);
-        getElement().addAfter(KtPsiFactoryKt.KtPsiFactory(file).createNewLine(), lastEntry);
         getElement().deleteChildRange(elseEntry, elseEntry);
         KtWhenEntry insertedWhenEntry = (KtWhenEntry) CodeInsightUtilCore.forcePsiPostprocessAndRestoreElement(insertedBranch);
 

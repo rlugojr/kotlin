@@ -64,7 +64,6 @@ public class AddWhenElseBranchFix extends KotlinQuickFixAction<KtWhenExpression>
         KtWhenEntry entry = psiFactory.createWhenEntry(ELSE_ENTRY_TEXT);
 
         PsiElement insertedBranch = getElement().addBefore(entry, whenCloseBrace);
-        getElement().addAfter(psiFactory.createNewLine(), insertedBranch);
 
         KtWhenEntry insertedWhenEntry = (KtWhenEntry) CodeInsightUtilCore.forcePsiPostprocessAndRestoreElement(insertedBranch);
         TextRange textRange = insertedWhenEntry.getTextRange();
