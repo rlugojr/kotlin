@@ -31,8 +31,7 @@ import java.util.*
 class ClassResolutionScopesSupport(
         private val classDescriptor: ClassDescriptor,
         storageManager: StorageManager,
-        private val getOuterScope: () -> LexicalScope,
-        private val primaryConstructorParameters: List<KtParameter>? = null
+        private val getOuterScope: () -> LexicalScope
 ) {
     private fun scopeWithGenerics(parent: LexicalScope): LexicalScopeImpl {
         return LexicalScopeImpl(parent, classDescriptor, false, null, LexicalScopeKind.CLASS_HEADER) {
@@ -75,24 +74,6 @@ class ClassResolutionScopesSupport(
             inheritanceScopeWithMe()
         }
     }
-
-    val scopeForInitializerResolution: () -> LexicalScope = storageManager.createLazyValue {
-        val primaryConstructor = classDescriptor.unsubstitutedPrimaryConstructor ?:
-                                 return@createLazyValue scopeForMemberDeclarationResolution()
-        assert(primaryConstructorParameters != null) {
-            "primary constructor parameters must be not null, because primary constructor exist: $primaryConstructor"
-        }
-        LexicalScopeImpl(scopeForMemberDeclarationResolution(), primaryConstructor, false, null,
-                         LexicalScopeKind.CLASS_INITIALIZER) {
-            primaryConstructorParameters!!.forEachIndexed {
-                index, parameter ->
-                if (!parameter.hasValOrVar()) {
-                    addVariableDescriptor(primaryConstructor.valueParameters[index])
-                }
-            }
-        }
-    }
-
 
     fun ClassDescriptor.getAllSuperclassesWithoutAny(): List<ClassDescriptor> {
         val superClasses = SmartList<ClassDescriptor>()
@@ -149,5 +130,29 @@ class ClassResolutionScopesSupport(
 
     companion object {
         private val createThrowingLexicalScope: (Boolean) -> LexicalScope =  { ThrowingLexicalScope() }
+    }
+}
+
+fun scopeForInitializerResolution(
+        classDescriptor: LazyClassDescriptor,
+        primaryConstructorParameters: List<KtParameter>,
+        storageManager: StorageManager
+): () -> LexicalScope {
+    return storageManager.createLazyValue {
+        val primaryConstructor = classDescriptor.unsubstitutedPrimaryConstructor ?:
+                                 return@createLazyValue classDescriptor.scopeForMemberDeclarationResolution
+        LexicalScopeImpl(
+                classDescriptor.scopeForMemberDeclarationResolution,
+                primaryConstructor,
+                false,
+                null,
+                LexicalScopeKind.CLASS_INITIALIZER
+        ) {
+            primaryConstructorParameters.forEachIndexed { index, parameter ->
+                if (!parameter.hasValOrVar()) {
+                    addVariableDescriptor(primaryConstructor.valueParameters[index])
+                }
+            }
+        }
     }
 }

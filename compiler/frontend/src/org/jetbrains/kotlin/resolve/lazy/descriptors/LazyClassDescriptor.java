@@ -102,6 +102,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
 
     private final ClassResolutionScopesSupport resolutionScopesSupport;
     private final NotNullLazyValue<List<TypeParameterDescriptor>> parameters;
+    private final List<? extends KtParameter> primaryConstructorParameters;
 
     public LazyClassDescriptor(
             @NotNull final LazyClassContext c,
@@ -239,7 +240,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
             public LexicalScope invoke() {
                 return getOuterScope();
             }
-        }, classLikeInfo.getPrimaryConstructorParameters());
+        });
 
         this.parameters = c.getStorageManager().createLazyValue(new Function0<List<TypeParameterDescriptor>>() {
             @Override
@@ -264,6 +265,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
             }
         });
 
+        this.primaryConstructorParameters = classLikeInfo.getPrimaryConstructorParameters();
     }
 
     // NOTE: Called from constructor!
@@ -319,7 +321,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     @Override
     @NotNull
     public LexicalScope getScopeForInitializerResolution() {
-        return resolutionScopesSupport.getScopeForInitializerResolution().invoke();
+        return ClassResolutionScopesSupportKt.scopeForInitializerResolution(this, primaryConstructorParameters, c.getStorageManager()).invoke();
     }
 
     @NotNull
