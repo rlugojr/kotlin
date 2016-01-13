@@ -35,6 +35,7 @@ interface Deprecation {
     fun exists() = deprecationLevel != DeprecationLevelValue.NONE
 }
 
+fun Deprecation.isDeprecatedByOverridden() = this is DeprecatedByOverridden && exists()
 
 private object NoDeprecation : Deprecation {
     override val deprecationLevel: DeprecationLevelValue
