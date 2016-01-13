@@ -1,0 +1,76 @@
+package
+
+package foo {
+    public fun use(/*0*/ warningDeprecated: foo.WarningDeprecated, /*1*/ errorDeprecated: foo.ErrorDeprecated, /*2*/ setterDeprecated: foo.SetterDeprecated, /*3*/ getterDeprecated: foo.GetterDeprecated, /*4*/ wd: foo.WD, /*5*/ ed: foo.ED, /*6*/ gd: foo.GD, /*7*/ sd: foo.SD): kotlin.Unit
+
+    public final class ED : foo.ErrorDeprecated {
+        public constructor ED()
+        public open override /*1*/ var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public open class ErrorDeprecated {
+        public constructor ErrorDeprecated()
+        @kotlin.Deprecated(level = DeprecationLevel.ERROR, message = "") public open var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public final class GD : foo.GetterDeprecated {
+        public constructor GD()
+        public open override /*1*/ var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public open class GetterDeprecated {
+        public constructor GetterDeprecated()
+        public open var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public interface HiddenDeprecation {
+        @kotlin.Deprecated(level = DeprecationLevel.HIDDEN, message = "") public abstract var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public final class SD : foo.SetterDeprecated {
+        public constructor SD()
+        public open override /*1*/ var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public open class SetterDeprecated {
+        public constructor SetterDeprecated()
+        public open var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public final class WD : foo.WarningDeprecated {
+        public constructor WD()
+        public open override /*1*/ var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+
+    public open class WarningDeprecated {
+        public constructor WarningDeprecated()
+        @kotlin.Deprecated(level = DeprecationLevel.WARNING, message = "") public open var p: kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+        public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+        public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+    }
+}

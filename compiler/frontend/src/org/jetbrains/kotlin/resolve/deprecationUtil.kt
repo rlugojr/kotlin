@@ -36,7 +36,6 @@ interface Deprecation {
 }
 
 
-
 private object NoDeprecation : Deprecation {
     override val deprecationLevel: DeprecationLevelValue
         get() = DeprecationLevelValue.NONE
@@ -67,6 +66,9 @@ private class DeprecatedByAnnotation(private val annotation: AnnotationDescripto
 private class DeprecatedByOverridden(private val deprecations: Collection<Deprecation>) : Deprecation {
     init {
         assert(deprecations.isNotEmpty())
+        assert(deprecations.none {
+            it is DeprecatedByOverridden
+        })
     }
 
     override val deprecationLevel: DeprecationLevelValue = deprecations.map(Deprecation::deprecationLevel).min()!!
@@ -80,31 +82,53 @@ private class DeprecatedByOverridden(private val deprecations: Collection<Deprec
         get() = deprecations.first().target
 }
 
-fun DeclarationDescriptor.getDeprecatedAnnotation(): Deprecation {
-    return getDeprecatedAnnotation(HashSet())
-}
-
-private fun DeclarationDescriptor.getDeprecatedAnnotation(visited: MutableSet<DeclarationDescriptor>): Deprecation {
-    visited.add(this)
-
-    val deprecation = this.getOwnDeprecatedAnnotation()
+fun DeclarationDescriptor.getDeprecation(): Deprecation {
+    val deprecation = this.getDeprecationByAnnotation()
     if (deprecation != null) {
         return deprecation
     }
 
     if (this is CallableMemberDescriptor) {
-        val allDeprecations = overriddenDescriptors.map { it.getDeprecatedAnnotation(visited) }.filterNotNull()
-        if (allDeprecations.isEmpty()) {
-            return NoDeprecation
-        }
-
-        return DeprecatedByOverridden(allDeprecations)
+        return deprecationByOverridden(this)
     }
 
     return NoDeprecation
 }
 
-private fun DeclarationDescriptor.getOwnDeprecatedAnnotation(): DeprecatedByAnnotation? {
+private fun deprecationByOverridden(root: CallableMemberDescriptor): Deprecation {
+    val visited = HashSet<CallableMemberDescriptor>()
+    val deprecations = LinkedHashSet<Deprecation>()
+
+    fun traverse(node: CallableMemberDescriptor) {
+        if (node in visited) return
+
+        visited.add(node)
+
+        val deprecatedAnnotation = node.getDeprecationByAnnotation()
+        val overriddenDescriptors = node.overriddenDescriptors
+        when {
+            deprecatedAnnotation != null -> {
+                deprecations.add(deprecatedAnnotation)
+            }
+            overriddenDescriptors.isEmpty() -> {
+                deprecations.add(NoDeprecation)
+            }
+            else -> {
+                overriddenDescriptors.forEach { traverse(it) }
+            }
+        }
+    }
+
+    traverse(root)
+
+    if (deprecations.isEmpty()) {
+        return NoDeprecation
+    }
+
+    return DeprecatedByOverridden(deprecations)
+}
+
+private fun DeclarationDescriptor.getDeprecationByAnnotation(): DeprecatedByAnnotation? {
     val ownAnnotation = getDeclaredDeprecatedAnnotation(AnnotationUseSiteTarget.getAssociatedUseSiteTarget(this))
     if (ownAnnotation != null)
         return DeprecatedByAnnotation(ownAnnotation, this)
@@ -163,5 +187,5 @@ private val HIDDEN_ANNOTATION_FQ_NAME = FqName("kotlin.HiddenDeclaration")
 fun DeclarationDescriptor.isHiddenInResolution(): Boolean {
     if (this is FunctionDescriptor && this.isHiddenToOvercomeSignatureClash) return true
     return annotations.findAnnotation(HIDDEN_ANNOTATION_FQ_NAME) != null
-           || getDeprecatedAnnotation().deprecationLevel == DeprecationLevelValue.HIDDEN
+           || getDeprecation().deprecationLevel == DeprecationLevelValue.HIDDEN
 }

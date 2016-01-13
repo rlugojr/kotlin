@@ -30,12 +30,12 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.Deprecation
 import org.jetbrains.kotlin.resolve.DeprecationLevelValue
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.getDeprecatedAnnotation
+import org.jetbrains.kotlin.resolve.getDeprecation
 
 class DeprecatedSymbolValidator : SymbolUsageValidator {
 
     override fun validateCall(resolvedCall: ResolvedCall<*>?, targetDescriptor: CallableDescriptor, trace: BindingTrace, element: PsiElement) {
-        val deprecation = targetDescriptor.getDeprecatedAnnotation()
+        val deprecation = targetDescriptor.getDeprecation()
         if (deprecation.exists()) {
             trace.report(createDeprecationDiagnostic(element, deprecation))
         }
@@ -55,7 +55,7 @@ class DeprecatedSymbolValidator : SymbolUsageValidator {
         if (superExpression != null && superExpression.getCalleeExpression().getConstructorReferenceExpression() == element)
             return
 
-        val deprecation = targetDescriptor.getDeprecatedAnnotation()
+        val deprecation = targetDescriptor.getDeprecation()
         if (deprecation.exists()) {
             trace.report(createDeprecationDiagnostic(element, deprecation))
         }
