@@ -2586,6 +2586,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/checkArguments"), Pattern.compile("^(.+)\\.kt$"), true);
             }
 
+            @TestMetadata("arrayAccessSetWithDefaultValues.kt")
+            public void testArrayAccessSetWithDefaultValues() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/checkArguments/arrayAccessSetWithDefaultValues.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("booleanExpressions.kt")
             public void testBooleanExpressions() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/checkArguments/booleanExpressions.kt");

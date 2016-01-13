@@ -56,10 +56,7 @@ object OperatorChecks {
 
             when {
                 GET == name -> valueParameters.size >= 1
-                SET == name -> {
-                    val lastIsOk = valueParameters.lastOrNull()?.let { !it.hasDefaultValue() && it.varargElementType == null } ?: false
-                    valueParameters.size >= 2 && lastIsOk
-                }
+                SET == name -> valueParameters.size >= 2
 
                 GET_VALUE == name -> noDefaultsAndVarargs && valueParameters.size >= 2 && valueParameters[1].isKProperty
                 SET_VALUE == name -> noDefaultsAndVarargs && valueParameters.size >= 3 && valueParameters[1].isKProperty
