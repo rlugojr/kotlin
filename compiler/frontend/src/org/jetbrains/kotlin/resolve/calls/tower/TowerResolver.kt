@@ -72,16 +72,9 @@ class TowerResolver {
         return run(context, processor, false, AllCandidatesCollector(context))
     }
 
-    private fun ScopeTower.createLevels(): List<ScopeTowerLevel> {
+    private fun ScopeTower.createNonLocalLevels(): List<ScopeTowerLevel> {
         val result = ArrayList<ScopeTowerLevel>()
 
-        // locals win
-        lexicalScope.parentsWithSelf.
-                filterIsInstance<LexicalScope>().
-                filter { it.kind.withLocalDescriptors }.
-                mapTo(result) { ScopeBasedTowerLevel(this, it) }
-
-        var isFirstImportingScope = true
         lexicalScope.parentsWithSelf.forEach { scope ->
             if (scope is LexicalScope) {
                 if (!scope.kind.withLocalDescriptors) result.add(ScopeBasedTowerLevel(this, scope))
@@ -89,10 +82,6 @@ class TowerResolver {
                 scope.implicitReceiver?.let { result.add(ReceiverScopeTowerLevel(this, it.value)) }
             }
             else {
-                if (isFirstImportingScope) {
-                    isFirstImportingScope = false
-                    result.add(SyntheticScopeBasedTowerLevel(this, syntheticScopes))
-                }
                 result.add(ImportingScopeBasedTowerLevel(this, scope as ImportingScope))
             }
         }
@@ -103,18 +92,61 @@ class TowerResolver {
     private fun ScopeTower.createTowerDataList(): List<TowerData> = ArrayList<TowerData>().apply {
         operator fun TowerData.unaryPlus() = add(this)
 
+        val localLevels = lexicalScope.parentsWithSelf.
+                filterIsInstance<LexicalScope>().filter { it.kind.withLocalDescriptors }.
+                map { ScopeBasedTowerLevel(this@createTowerDataList, it) }
+
+        val nonLocalLevels = createNonLocalLevels()
+        val syntheticLevel = SyntheticScopeBasedTowerLevel(this@createTowerDataList, syntheticScopes)
+
+
         // this Data needs for InvokeProcessors
         for (implicitReceiver in implicitReceivers) {
             + TowerData.OnlyImplicitReceiver(implicitReceiver)
         }
         // possible there is explicit member
         + TowerData.Empty
+        // synthetic member for explicit receiver
+        + TowerData.TowerLevel(syntheticLevel)
 
-        for (level in createLevels()) {
-            for (implicitReceiver in implicitReceivers) {
-                + TowerData.BothTowerLevelAndImplicitReceiver(level, implicitReceiver)
+        //-------------locals-------------------
+        // local extensions for implicit receiver
+        for (implicitReceiver in implicitReceivers) {
+            for (localLevel in localLevels) {
+                + TowerData.BothTowerLevelAndImplicitReceiver(localLevel, implicitReceiver)
             }
-            + TowerData.TowerLevel(level)
+        }
+
+        // local non-extensions or extension for explicit receiver
+        for (localLevel in localLevels) {
+            + TowerData.TowerLevel(localLevel)
+        }
+
+        //------------other--------------------
+        for (scope in lexicalScope.parentsWithSelf) {
+            if (scope is LexicalScope) {
+                // statics
+                if (!scope.kind.withLocalDescriptors) {
+                    + TowerData.TowerLevel(ScopeBasedTowerLevel(this@createTowerDataList, scope))
+                }
+
+                val implicitReceiver = scope.implicitReceiver?.value
+                if (implicitReceiver != null) {
+                    // members of implicit receiver
+                    + TowerData.TowerLevel(ReceiverScopeTowerLevel(this@createTowerDataList, implicitReceiver))
+
+                    // synthetic members
+                    + TowerData.BothTowerLevelAndImplicitReceiver(syntheticLevel, implicitReceiver)
+
+                    // extension for implicit receiver
+                    for (nonLocalLevel in nonLocalLevels) {
+                        + TowerData.BothTowerLevelAndImplicitReceiver(nonLocalLevel, implicitReceiver)
+                    }
+                }
+            }
+            else {
+                + TowerData.TowerLevel(ImportingScopeBasedTowerLevel(this@createTowerDataList, scope as ImportingScope))
+            }
         }
     }
 
