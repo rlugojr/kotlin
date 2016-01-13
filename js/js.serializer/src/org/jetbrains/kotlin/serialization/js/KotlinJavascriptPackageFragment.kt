@@ -36,7 +36,7 @@ class KotlinJavascriptPackageFragment(
 
     override val classIdToProto: Map<ClassId, ProtoBuf.Class>? get() = null
 
-    override fun loadClassNames(packageProto: ProtoBuf.Package): Collection<Name> {
+    override fun loadClassNames(): Collection<Name> {
         val classesStream = loadResourceSure(KotlinJavascriptSerializedResourcePaths.getClassesInPackageFilePath(fqName))
         val classesProto = JsProtoBuf.Classes.parseFrom(classesStream, serializedResourcePaths.extensionRegistry)
         return classesProto.classNameList?.map { id -> nameResolver.getName(id) } ?: listOf()

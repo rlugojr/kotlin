@@ -53,8 +53,7 @@ abstract class DeserializedPackageFragment(
         val packageStream = loadResourceSure(serializedResourcePaths.getPackageFilePath(fqName))
         val packageProto = ProtoBuf.Package.parseFrom(packageStream, serializedResourcePaths.extensionRegistry)
         return DeserializedPackageMemberScope(
-                this, packageProto, nameResolver, packagePartSource = null, components = components,
-                classNames = { loadClassNames(packageProto) }
+                this, packageProto, nameResolver, packagePartSource = null, components = components, classNames = { loadClassNames() }
         )
     }
 
@@ -64,7 +63,7 @@ abstract class DeserializedPackageFragment(
         return name in getMemberScope().classNames
     }
 
-    protected abstract fun loadClassNames(packageProto: ProtoBuf.Package): Collection<Name>
+    protected abstract fun loadClassNames(): Collection<Name>
 
     protected fun loadResourceSure(path: String): InputStream =
             loadResource(path) ?: throw IllegalStateException("Resource not found in classpath: $path")
