@@ -76,7 +76,7 @@ public class JavaElementFinder extends PsiElementFinder implements KotlinFinderM
                 @Nullable
                 @Override
                 public Result<SLRUCache<FindClassesRequest, PsiClass[]>> compute() {
-                    System.out.println("Create cache");
+                    //System.out.println("Create cache");
 
                     return new Result<SLRUCache<FindClassesRequest, PsiClass[]>>(
                             new SLRUCache<FindClassesRequest, PsiClass[]>(30, 10) {

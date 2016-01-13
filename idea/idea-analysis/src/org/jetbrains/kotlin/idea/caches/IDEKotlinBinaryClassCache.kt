@@ -21,13 +21,15 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.kotlin.load.kotlin.KotlinBinaryClassCache
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
+import org.jetbrains.kotlin.load.kotlin.ModuleMapping
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.utils.Profiler
 
 object IDEKotlinBinaryClassCache {
     data class KotlinBinaryHeaderInfo(val classHeader: KotlinClassHeader, val classId: ClassId)
     data class KotlinBinary(val isKotlinBinary: Boolean, val timestamp: Long, val headerInfo: KotlinBinaryHeaderInfo?)
+
+    val attributeService = ServiceManager.getService(FileAttributeService::class.java)
 
     fun createHeaderInfo(kotlinBinaryClass: KotlinJvmBinaryClass?): KotlinBinaryHeaderInfo? {
         val header = kotlinBinaryClass?.classHeader
@@ -43,70 +45,95 @@ object IDEKotlinBinaryClassCache {
     val KEY = Key.create<KotlinBinary>(KOTLIN_COMPILED_FILE_ATTRIBUTE)
 
     fun getKotlinBinaryClass(file: VirtualFile, fileContent: ByteArray? = null): KotlinJvmBinaryClass? {
-//        if (HasCompiledKotlinInJar.isInNoKotlinJar(file)) {
-//            return null
-//        }
-        val profiler = Profiler.create("").mute().setPrintAccuracy(5).start()
-        var state = ""
+//        val profiler = Profiler.create(file.toString()).mute().setPrintAccuracy(5).start()
         try {
             val cached = isKotlinBinaryFileFromCache(file)
-            if (cached != null) {
-                if (!cached.first.isKotlinBinary) {
-                    state = cached.second + "f"
-                    return null
-                }
+            if (cached != null && !cached.isKotlinBinary) {
+//                println("xxx %.5fs ${file.name} ${file.hashCode()} ${file.path}".format(profiler.pause().cumulative.toFloat() / 1e9))
+                return null
             }
 
-            val kotlinBinaryClass = KotlinBinaryClassCache.getKotlinBinaryClass(file, fileContent)
+            val kotlinBinaryClass = getKotlinBinaryClassNoCache(file, fileContent)
 
             val isKotlinBinaryClass = kotlinBinaryClass != null
+            attributeService.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, isKotlinBinaryClass)
 
-            val service = ServiceManager.getService(FileAttributeService::class.java)
-            service.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, isKotlinBinaryClass)
+            val headerInfo = createHeaderInfo(kotlinBinaryClass)
+            if (headerInfo != null) {
+                file.putUserData(KEY, KotlinBinary(isKotlinBinaryClass, file.timeStamp, headerInfo))
+            }
 
-            file.putUserData(KEY, KotlinBinary(isKotlinBinaryClass, file.timeStamp, createHeaderInfo(kotlinBinaryClass)))
-
-            state = "rr" + (if (fileContent != null) "r" else "!") + if (kotlinBinaryClass != null) "t" else "f"
+//            println("${if (headerInfo != null) "TTT" else "FFF"} %.5fs ${file.name} ${file.hashCode()} ${file.path}".format(profiler.pause().cumulative.toFloat() / 1e9))
             return kotlinBinaryClass
         }
         finally {
-            //println("$state %.5fs ${file.name} ${file.hashCode()} ${file.path}".format(profiler.pause().cumulative.toFloat() / 1e9))
-
-            profiler.end()
+//            profiler.end()
         }
     }
 
     fun getKotlinBinaryClassHeaderInfo(file: VirtualFile, fileContent: ByteArray? = null): KotlinBinaryHeaderInfo? {
-        val cached = isKotlinBinaryFileFromCache(file)?.first
+//        val profiler = Profiler.create(file.toString()).mute().setPrintAccuracy(5).start()
+        val cached = isKotlinBinaryFileFromCache(file)
         if (cached != null) {
-            if (!cached.isKotlinBinary) return null
+            if (!cached.isKotlinBinary) {
+//                println("nnn %.5fs ${file.name} ${file.hashCode()} ${file.path}".format(profiler.pause().cumulative.toFloat() / 1e9))
+//                profiler.end()
+                return null
+            }
             if (cached.headerInfo != null) {
+//                println("kkk %.5fs ${file.name} ${file.hashCode()} ${file.path}".format(profiler.pause().cumulative.toFloat() / 1e9))
+//                profiler.end()
                 return cached.headerInfo
             }
         }
 
-        return createHeaderInfo(getKotlinBinaryClass(file, fileContent))
+//        profiler.end()
+
+        val kotlinBinaryClass = getKotlinBinaryClass(file, fileContent)
+        return createHeaderInfo(kotlinBinaryClass)
     }
 
 
     fun isKotlinBinaryFile(file: VirtualFile, fileContent: ByteArray? = null): Boolean = getKotlinBinaryClassHeaderInfo(file, fileContent) != null
 
-    fun isKotlinBinaryFileFromCache(file: VirtualFile): Pair<KotlinBinary, String>? {
+    private fun getKotlinBinaryClassNoCache(file: VirtualFile, fileContent: ByteArray?): KotlinJvmBinaryClass? {
+            return KotlinBinaryClassCache.getKotlinBinaryClass(file, fileContent)
+    }
+
+    private fun isKotlinBinaryFileFromCache(file: VirtualFile): KotlinBinary? {
         val userData = file.getUserData(KEY)
         if (userData != null && userData.timestamp == file.timeStamp) {
-            return userData to "xxx"
+            return userData
         }
 
-        val service = ServiceManager.getService(FileAttributeService::class.java)
-        val attribute = service.readBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file)
+        val attribute = attributeService.readBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file)
 
         if (attribute != null) {
             val result = KotlinBinary(attribute.value, file.timeStamp, null)
-            file.putUserData(KEY, result)
+            if (result.isKotlinBinary) {
+                file.putUserData(KEY, result)
+            }
 
-            return result to "aaa"
+            return result
         }
 
         return null
+    }
+
+    object HasCompiledKotlinInJar : JarUserDataManager.JarBooleanPropertyCounter(HasCompiledKotlinInJar::class.simpleName!!) {
+        override fun hasProperty(file: VirtualFile): Boolean {
+            if (file.isDirectory) return false
+            if (file.extension == ModuleMapping.MAPPING_FILE_EXT) {
+                return true
+            }
+
+            return getKotlinBinaryClassNoCache(file, null)?.classHeader != null
+        }
+
+        fun isInNoKotlinJar(file: VirtualFile): Boolean =
+                JarUserDataManager.hasFileWithProperty(HasCompiledKotlinInJar, file) == false
+
+        fun hasKotlinJar(file: VirtualFile): Boolean =
+                JarUserDataManager.hasFileWithProperty(HasCompiledKotlinInJar, file) == true
     }
 }

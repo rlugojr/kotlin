@@ -23,9 +23,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.ClassFileViewProvider
 import org.jetbrains.kotlin.idea.caches.FileAttributeService
 import org.jetbrains.kotlin.idea.caches.IDEKotlinBinaryClassCache
-import org.jetbrains.kotlin.idea.caches.JarUserDataManager
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
-import org.jetbrains.kotlin.load.kotlin.ModuleMapping
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
@@ -63,16 +61,15 @@ fun isKotlinJvmCompiledFile(file: VirtualFile): Boolean {
 //        return attribute.value
 //    }
 
-    val result = isKotlinJvmCompiledFileNoCache(file)
+//    val result = isKotlinJvmCompiledFileNoCache(file)
 
 //    service.writeBooleanAttribute(KOTLIN_COMPILED_FILE_ATTRIBUTE, file, result)
 //    file.putUserData(KEY, IsKotlinBinary(result, file.timeStamp))
 
-    return result
-}
+//    return result
 
-@Suppress("NOTHING_TO_INLINE")
-private inline fun isKotlinJvmCompiledFileNoCache(file: VirtualFile): Boolean = IDEKotlinBinaryClassCache.isKotlinBinaryFile(file)
+    return IDEKotlinBinaryClassCache.isKotlinBinaryFile(file)
+}
 
 /**
  * Checks if this file is a compiled Kotlin class file ABI-compatible with the current plugin
@@ -101,20 +98,6 @@ fun isKotlinInternalCompiledFile(file: VirtualFile): Boolean {
     return header.kind == KotlinClassHeader.Kind.SYNTHETIC_CLASS ||
            header.kind == KotlinClassHeader.Kind.MULTIFILE_CLASS_PART ||
            header.isLocalClass || header.syntheticClassKind == "PACKAGE_PART"
-}
-
-object HasCompiledKotlinInJar : JarUserDataManager.JarBooleanPropertyCounter(HasCompiledKotlinInJar::class.simpleName!!) {
-    override fun hasProperty(file: VirtualFile): Boolean {
-        if (file.isDirectory) return false
-        if (file.extension == ModuleMapping.MAPPING_FILE_EXT) {
-            return true
-        }
-
-        return isKotlinJvmCompiledFileNoCache(file)
-    }
-
-    fun isInNoKotlinJar(file: VirtualFile): Boolean =
-            JarUserDataManager.hasFileWithProperty(HasCompiledKotlinInJar, file) == false
 }
 
 fun findMultifileClassParts(file: VirtualFile, classId: ClassId, kotlinClassHeader: KotlinClassHeader): List<KotlinJvmBinaryClass> {

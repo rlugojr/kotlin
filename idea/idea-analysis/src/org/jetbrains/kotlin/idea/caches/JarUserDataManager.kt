@@ -53,7 +53,7 @@ object JarUserDataManager {
 
         if (stored == null && fileAttributeService != null) {
             val savedData = fileAttributeService.readEnumAttribute(counter.key.toString(), localJarFile, State::class.java)
-            if (savedData != null && savedData.value != null) {
+            if (savedData != null) {
                 val hasFileWithProperty = savedData.value == State.HAS_FILE
 
                 storeUserData(counter, localJarFile, hasFileWithProperty, savedData.timeStamp)
