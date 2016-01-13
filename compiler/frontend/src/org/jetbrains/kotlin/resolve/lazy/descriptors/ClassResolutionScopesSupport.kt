@@ -135,22 +135,25 @@ class ClassResolutionScopesSupport(
 
 fun scopeForInitializerResolution(
         classDescriptor: LazyClassDescriptor,
+        parentDescriptor: DeclarationDescriptor,
         primaryConstructorParameters: List<KtParameter>,
         storageManager: StorageManager
 ): () -> LexicalScope {
     return storageManager.createLazyValue {
-        val primaryConstructor = classDescriptor.unsubstitutedPrimaryConstructor ?:
-                                 return@createLazyValue classDescriptor.scopeForMemberDeclarationResolution
         LexicalScopeImpl(
                 classDescriptor.scopeForMemberDeclarationResolution,
-                primaryConstructor,
+                parentDescriptor,
                 false,
                 null,
                 LexicalScopeKind.CLASS_INITIALIZER
         ) {
-            primaryConstructorParameters.forEachIndexed { index, parameter ->
-                if (!parameter.hasValOrVar()) {
-                    addVariableDescriptor(primaryConstructor.valueParameters[index])
+            if (primaryConstructorParameters.isNotEmpty()) {
+                val parameterDescriptors = classDescriptor.unsubstitutedPrimaryConstructor!!.valueParameters
+                assert(parameterDescriptors.size == primaryConstructorParameters.size)
+                for ((parameter, descriptor) in primaryConstructorParameters.zip(parameterDescriptors)) {
+                    if (!parameter.hasValOrVar()) {
+                        addVariableDescriptor(descriptor)
+                    }
                 }
             }
         }

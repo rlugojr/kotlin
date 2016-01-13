@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorBase;
+import org.jetbrains.kotlin.descriptors.impl.FunctionDescriptorImpl;
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation;
 import org.jetbrains.kotlin.lexer.KtTokens;
 import org.jetbrains.kotlin.name.Name;
@@ -54,10 +55,7 @@ import org.jetbrains.kotlin.storage.MemoizedFunctionToNotNull;
 import org.jetbrains.kotlin.storage.NotNullLazyValue;
 import org.jetbrains.kotlin.storage.NullableLazyValue;
 import org.jetbrains.kotlin.storage.StorageManager;
-import org.jetbrains.kotlin.types.AbstractClassTypeConstructor;
-import org.jetbrains.kotlin.types.KotlinType;
-import org.jetbrains.kotlin.types.TypeConstructor;
-import org.jetbrains.kotlin.types.TypeUtils;
+import org.jetbrains.kotlin.types.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -103,6 +101,8 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     private final ClassResolutionScopesSupport resolutionScopesSupport;
     private final NotNullLazyValue<List<TypeParameterDescriptor>> parameters;
     private final List<? extends KtParameter> primaryConstructorParameters;
+
+    private final NotNullLazyValue<DeclarationDescriptor> initializerScopeParent;
 
     public LazyClassDescriptor(
             @NotNull final LazyClassContext c,
@@ -266,6 +266,42 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
         });
 
         this.primaryConstructorParameters = classLikeInfo.getPrimaryConstructorParameters();
+
+        this.initializerScopeParent = storageManager.createLazyValue(new Function0<DeclarationDescriptor>() {
+            @Override
+            public DeclarationDescriptor invoke() {
+                ConstructorDescriptor primaryConstructor = getUnsubstitutedPrimaryConstructor();
+                if (primaryConstructor != null) return primaryConstructor;
+
+                return new FunctionDescriptorImpl(LazyClassDescriptor.this, null, Annotations.Companion.getEMPTY(),
+                                                  Name.special("<init-blocks>"),
+                                                  CallableMemberDescriptor.Kind.SYNTHESIZED, SourceElement.NO_SOURCE) {
+                    @NotNull
+                    @Override
+                    protected FunctionDescriptorImpl createSubstitutedCopy(
+                            @NotNull DeclarationDescriptor newOwner,
+                            @Nullable FunctionDescriptor original,
+                            @NotNull Kind kind,
+                            @Nullable Name newName,
+                            boolean preserveSource
+                    ) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @NotNull
+                    @Override
+                    public FunctionDescriptor copy(
+                            DeclarationDescriptor newOwner,
+                            Modality modality,
+                            Visibility visibility,
+                            Kind kind,
+                            boolean copyOverrides
+                    ) {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+        });
     }
 
     // NOTE: Called from constructor!
@@ -321,7 +357,9 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     @Override
     @NotNull
     public LexicalScope getScopeForInitializerResolution() {
-        return ClassResolutionScopesSupportKt.scopeForInitializerResolution(this, primaryConstructorParameters, c.getStorageManager()).invoke();
+        return ClassResolutionScopesSupportKt.scopeForInitializerResolution(
+                this, initializerScopeParent.invoke(), primaryConstructorParameters, c.getStorageManager()
+        ).invoke();
     }
 
     @NotNull
