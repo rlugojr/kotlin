@@ -39,7 +39,7 @@ class SimplifyForIntention : SelfTargetingRangeIntention<KtForExpression>(
         "Simplify 'for' using destructing declaration",
         "Simplify 'for'"
 ) {
-    override fun applyTo(element: KtForExpression, editor: Editor) {
+    override fun applyTo(element: KtForExpression, editor: Editor?) {
         applyTo(element)
     }
 
