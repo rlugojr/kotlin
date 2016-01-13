@@ -113,7 +113,7 @@ fun use(
     sd.<!DEPRECATION!>p<!> = 1
 
     sdh.p
-    sdh.p = 1
+    sdh.<!DEPRECATION!>p<!> = 1
 
     edh.<!DEPRECATION_ERROR!>p<!>
     edh.<!DEPRECATION_ERROR!>p<!> = 1
