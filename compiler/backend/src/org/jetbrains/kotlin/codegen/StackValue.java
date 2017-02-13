@@ -183,6 +183,24 @@ public abstract class StackValue {
         }
     }
 
+    public static StackValue createDefaultPrimitiveValue(@NotNull Type type) {
+        Object value = 0;
+        if (type.getSort() == Type.BOOLEAN) {
+            value = Boolean.FALSE;
+        }
+        else if (type.getSort() == Type.FLOAT) {
+            value = new Float(0.0);
+        }
+        else if (type.getSort() == Type.DOUBLE) {
+            value = new Double(0.0);
+        }
+        else if (type.getSort() == Type.LONG) {
+            value = new Long(0);
+        }
+        return constant(value, type);
+    }
+
+
     @NotNull
     public static StackValue cmp(@NotNull IElementType opToken, @NotNull Type type, StackValue left, StackValue right) {
         return BranchedValue.Companion.cmp(opToken, type, left, right);
@@ -883,7 +901,7 @@ public abstract class StackValue {
             newReceiver.put(newReceiver.type, v);
             callGenerator.processAndPutHiddenParameters(false);
 
-            defaultArgs = generator.generate(valueArguments, valueArguments);
+            defaultArgs = generator.generate(valueArguments, valueArguments, LazyArgumentList);
         }
 
         private ArgumentGenerator createArgumentGenerator() {
@@ -895,7 +913,6 @@ public abstract class StackValue {
                     !isComplexOperationWithDup ? codegen.getOrCreateCallGenerator(resolvedCall) : codegen.defaultCallGenerator;
             return new CallBasedArgumentGenerator(
                     codegen,
-                    callGenerator,
                     resolvedCall.getResultingDescriptor().getValueParameters(), callable.getValueParameterTypes()
             );
         }
@@ -1027,7 +1044,7 @@ public abstract class StackValue {
             }
             CallGenerator callGenerator = getCallGenerator();
             callGenerator.genCall(getter, resolvedGetCall, genDefaultMaskIfPresent(callGenerator), codegen);
-            coerceTo(type, v);
+            coerceTo(type, v );
         }
 
         private boolean genDefaultMaskIfPresent(CallGenerator callGenerator) {
