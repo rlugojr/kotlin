@@ -1207,6 +1207,36 @@ public abstract class StackValue extends StackValueBase {
         }
 
         @Override
+        public void put(@NotNull Type type, @NotNull InstructionAdapter v, boolean skipReceiver) {
+            if (getter == null) {
+                super.put(type, v, skipReceiver);
+                return;
+            }
+            PropertyGetterDescriptor getterDescriptor = descriptor.getGetter();
+            assert getterDescriptor != null : "Getter descriptor should be not null for " + descriptor;
+
+            LazyArguments lazyArguments = new LazyArguments();
+            lazyArguments.addParameter(receiver, LazyArgumentKind.DISPATCH_RECEIVER);
+
+            if (resolvedCall != null) {
+                CallGenerator callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, getterDescriptor);
+                callGenerator.genCall(getter, resolvedCall, lazyArguments, codegen);
+            }
+            else {
+                lazyArguments.generateAllDirectlyTo(v);
+                getter.genInvokeInstruction(v);
+            }
+
+            coerce(getter.getReturnType(), type, v);
+
+            KotlinType returnType = descriptor.getReturnType();
+            if (returnType != null && KotlinBuiltIns.isNothing(returnType)) {
+                v.aconst(null);
+                v.athrow();
+            }
+        }
+
+        @Override
         public void putSelector(@NotNull Type type, @NotNull InstructionAdapter v) {
             if (getter == null) {
                 assert fieldName != null : "Property should have either a getter or a field name: " + descriptor;
@@ -1219,26 +1249,11 @@ public abstract class StackValue extends StackValueBase {
                 coerceTo(type, v);
             }
             else {
-                PropertyGetterDescriptor getterDescriptor = descriptor.getGetter();
-                assert getterDescriptor != null : "Getter descriptor should be not null for " + descriptor;
-                if (resolvedCall != null && getterDescriptor.isInline()) {
-                    CallGenerator callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, getterDescriptor);
-                    callGenerator.processAndPutHiddenParameters(false);
-                    callGenerator.genCall(getter, resolvedCall, false, codegen);
-                }
-                else {
-                    getter.genInvokeInstruction(v);
-                }
-                coerce(getter.getReturnType(), type, v);
-
-                KotlinType returnType = descriptor.getReturnType();
-                if (returnType != null && KotlinBuiltIns.isNothing(returnType)) {
-                    v.aconst(null);
-                    v.athrow();
-                }
+                throw new RuntimeException("Unsupported");
             }
         }
 
+        //TODO recognize as StackValue.Constant
         private boolean inlineConstantIfNeeded(@NotNull Type type, @NotNull InstructionAdapter v) {
             if (JvmCodegenUtil.isInlinedJavaConstProperty(descriptor)) {
                 return inlineConstant(type, v);
@@ -1286,13 +1301,19 @@ public abstract class StackValue extends StackValueBase {
             if (resolvedCall != null && setterDescriptor != null && setterDescriptor.isInline()) {
                 assert setter != null : "Setter should be not null for " + descriptor;
                 CallGenerator callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, setterDescriptor);
-                if (!skipReceiver) {
-                    putReceiver(v, false);
+
+                LazyArguments lazyArguments = new LazyArguments();
+                lazyArguments.addParameter(receiver, LazyArgumentKind.DISPATCH_RECEIVER);
+                //TODO generate proper LazyValue
+                lazyArguments.addParameter(rightSide, LazyArgumentKind.EXPLICITLY_ADDED);
+                callGenerator.genCall(setter, resolvedCall, lazyArguments, codegen);
+
+                //coerce(topOfStackType, ArraysKt.last(setter.getParameterTypes()), v);
+
+                Type returnType = setter.getReturnType();
+                if (returnType != Type.VOID_TYPE) {
+                    pop(v, returnType);
                 }
-                callGenerator.processAndPutHiddenParameters(true);
-                callGenerator.putValueIfNeeded(rightSide.type, rightSide);
-                callGenerator.putHiddenParamsIntoLocals();
-                callGenerator.genCall(setter, resolvedCall, false, codegen);
             }
             else {
                 super.store(rightSide, v, skipReceiver);
@@ -1308,6 +1329,11 @@ public abstract class StackValue extends StackValueBase {
                 v.visitFieldInsn(isStaticStore ? PUTSTATIC : PUTFIELD, backingFieldOwner.getInternalName(), fieldName, this.type.getDescriptor());
             }
             else {
+                PropertySetterDescriptor setterDescriptor = descriptor.getSetter();
+                if (resolvedCall != null && setterDescriptor != null) {
+                    throw new UnsupportedOperationException("Unsupported: should be used simple 'store' method");
+                }
+
                 coerce(topOfStackType, ArraysKt.last(setter.getParameterTypes()), v);
                 setter.genInvokeInstruction(v);
 
