@@ -8088,6 +8088,12 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
         }
 
+        @TestMetadata("manyDefaultParameters.kt")
+        public void testManyDefaultParameters() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/enum/manyDefaultParameters.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("modifierFlags.kt")
         public void testModifierFlags() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/enum/modifierFlags.kt");

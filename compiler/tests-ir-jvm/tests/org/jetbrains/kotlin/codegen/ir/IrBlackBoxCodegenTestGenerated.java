@@ -7217,6 +7217,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             doTest(fileName);
         }
 
+        @TestMetadata("manyDefaultParameters.kt")
+        public void testManyDefaultParameters() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/enum/manyDefaultParameters.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("modifierFlags.kt")
         public void testModifierFlags() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/enum/modifierFlags.kt");
