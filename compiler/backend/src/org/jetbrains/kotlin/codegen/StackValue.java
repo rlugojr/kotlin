@@ -971,7 +971,7 @@ public abstract class StackValue extends StackValueBase {
                     valueParameters, this.callable.getValueParameterTypes()
             );
 
-            argumentGenerator.generate(valueArguments, valueArguments, lazyArguments);
+            argumentGenerator.generate(valueArguments, valueArguments, lazyArguments, false);
             if (setValue != null) {
                 lazyArguments.addParameter(new GeneratedValueArgument(
                         setValue, ArraysKt.last(callable.getParameterTypes()),

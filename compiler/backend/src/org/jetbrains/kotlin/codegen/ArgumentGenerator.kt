@@ -37,7 +37,8 @@ abstract class ArgumentGenerator {
     open fun generate(
             valueArgumentsByIndex: List<ResolvedValueArgument>,
             actualArgs: List<ResolvedValueArgument>,
-            lazyArguments: LazyArguments
+            lazyArguments: LazyArguments,
+            isConstructor: Boolean
     ): DefaultCallArgs {
         assert(valueArgumentsByIndex.size == actualArgs.size) {
             "Value arguments collection should have same size, but ${valueArgumentsByIndex.size} != ${actualArgs.size}"
@@ -82,6 +83,8 @@ abstract class ArgumentGenerator {
             }
             lazyArguments.addParameter(GeneratedValueArgument(value, parameterType(declIndex), parameterDescriptor(declIndex), declIndex, expression))
         }
+
+        defaultArgs.generateOnStackIfNeeded(lazyArguments, isConstructor)
 
         return defaultArgs
     }
