@@ -96,15 +96,23 @@ public abstract class StackValue extends StackValueBase {
         put(type, v);
     }
 
+    @Override
     public void put(@NotNull Type type, @NotNull InstructionAdapter v) {
-        put(type, v, false);
+        putReceiver(v, true);
+        putSelector(type, v);
     }
 
-    public void put(@NotNull Type type, @NotNull InstructionAdapter v, boolean skipReceiver) {
-        if (!skipReceiver) {
-            putReceiver(v, true);
+    @Override
+    public void putWithArguments(
+            @NotNull Type type, @NotNull InstructionAdapter v, @Nullable LazyArguments arguments
+    ) {
+        if (arguments == null) {
+            put(type, v);
         }
-        putSelector(type, v);
+        else {
+            arguments.generateAllDirectlyTo(v);
+            putSelector(type, v);
+        }
     }
 
     public abstract void putSelector(@NotNull Type type, @NotNull InstructionAdapter v);
@@ -953,6 +961,19 @@ public abstract class StackValue extends StackValueBase {
             throw new RuntimeException("Shouldn't be called");
         }
 
+        @Override
+        public void putWithArguments(
+                @NotNull Type type, @NotNull InstructionAdapter v, @Nullable LazyArguments arguments
+        ) {
+            if (arguments == null) {
+                super.putWithArguments(type, v, arguments);
+            }
+            else {
+                genCallImpl(getter, resolvedGetCall, false, arguments);
+                coerceTo(type, v );
+            }
+        }
+
         private void genCall(@NotNull Callable callable, @NotNull ResolvedCall<?> resolvedCall, @Nullable  StackValue setValue) {
             LazyArguments lazyArguments = new LazyArguments();
             genArgsImpl(callable, resolvedCall, setValue, lazyArguments, valueArguments);
@@ -1012,7 +1033,7 @@ public abstract class StackValue extends StackValueBase {
         }
 
         @Override
-        public void put(@NotNull Type type, @NotNull InstructionAdapter v, boolean skipReceiver) {
+        public void put(@NotNull Type type, @NotNull InstructionAdapter v) {
             if (getter == null) {
                 throw new UnsupportedOperationException("no getter specified");
             }
@@ -1215,16 +1236,25 @@ public abstract class StackValue extends StackValueBase {
         }
 
         @Override
-        public void put(@NotNull Type type, @NotNull InstructionAdapter v, boolean skipReceiver) {
+        public void put(@NotNull Type type, @NotNull InstructionAdapter v) {
             if (getter == null) {
-                super.put(type, v, skipReceiver);
+                super.put(type, v);
                 return;
             }
-            PropertyGetterDescriptor getterDescriptor = descriptor.getGetter();
-            assert getterDescriptor != null : "Getter descriptor should be not null for " + descriptor;
 
             LazyArguments lazyArguments = new LazyArguments();
             genArgs(lazyArguments, false);
+
+            putImpl(type, v, lazyArguments);
+        }
+
+        private void putImpl(
+                @NotNull Type type,
+                @NotNull InstructionAdapter v,
+                @NotNull LazyArguments lazyArguments
+        ) {
+            PropertyGetterDescriptor getterDescriptor = descriptor.getGetter();
+            assert getterDescriptor != null : "Getter descriptor should be not null for " + descriptor;
 
             if (resolvedCall != null) {
                 CallGenerator callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, getterDescriptor);
@@ -1241,6 +1271,18 @@ public abstract class StackValue extends StackValueBase {
             if (returnType != null && KotlinBuiltIns.isNothing(returnType)) {
                 v.aconst(null);
                 v.athrow();
+            }
+        }
+
+        @Override
+        public void putWithArguments(
+                @NotNull Type type, @NotNull InstructionAdapter v, @Nullable LazyArguments arguments
+        ) {
+            if (getter == null || arguments == null) {
+                super.putWithArguments(type, v, arguments);
+            }
+            else {
+                putImpl(type, v, arguments);
             }
         }
 
@@ -1718,6 +1760,19 @@ public abstract class StackValue extends StackValueBase {
             boolean hasReceiver = isNonStaticAccess(isRead);
             if (hasReceiver || receiver.canHaveSideEffects()) {
                 receiver.put(hasReceiver ? receiver.type : Type.VOID_TYPE, v);
+            }
+        }
+
+        @Override
+        public void putWithArguments(
+                @NotNull Type type, @NotNull InstructionAdapter v, @Nullable LazyArguments arguments
+        ) {
+            if (arguments == null) {
+                super.putWithArguments(type, v, null);
+            }
+            else {
+                arguments.generateAllDirectlyTo(v);
+                putSelector(type, v);
             }
         }
 
