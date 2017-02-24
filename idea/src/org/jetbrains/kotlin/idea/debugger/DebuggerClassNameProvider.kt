@@ -188,7 +188,7 @@ class DebuggerClassNameProvider(val myDebugProcess: DebugProcess, val scopes: Li
     private fun inlineCallClassPatterns(typeMapper: KotlinTypeMapper, element: KtElement): List<String> {
         val context = typeMapper.bindingContext
 
-        val (inlineCall, ktAnonymousClassElementProducer) = runReadAction {
+        val inlineCall = runReadAction {
             element.parents.map {
                 val ktCallExpression: KtCallExpression = when(it) {
                     is KtFunctionLiteral -> {
@@ -211,7 +211,7 @@ class DebuggerClassNameProvider(val myDebugProcess: DebugProcess, val scopes: Li
                 ktCallExpression to (it as KtElement)
             }.lastOrNull {
                 it != null && isInlineCall(context, it.component1())
-            }
+            }?.first
         } ?: return emptyList()
 
         val lexicalScope = context[BindingContext.LEXICAL_SCOPE, inlineCall] ?: return emptyList()
@@ -219,10 +219,6 @@ class DebuggerClassNameProvider(val myDebugProcess: DebugProcess, val scopes: Li
 
         val resolvedCall = runReadAction { inlineCall.getResolvedCall(context) } ?: return emptyList()
         val inlineFunctionName = resolvedCall.resultingDescriptor.name
-
-//        val originalInternalClassName = CodegenBinding.asmTypeForAnonymousClass(
-//                typeMapper.bindingContext, ktAnonymousClassElementProducer).internalName
-//        assert(originalInternalClassName.startsWith(baseClassName))
 
         val ownerDescriptor = lexicalScope.ownerDescriptor
         val ownerDescriptorName = if (isFunctionWithSuspendStateMachine(ownerDescriptor, typeMapper.bindingContext)) {
@@ -254,7 +250,7 @@ class DebuggerClassNameProvider(val myDebugProcess: DebugProcess, val scopes: Li
                     KtSecondaryConstructor::class.java)
 
     private fun getElementToCalculateClassName(notPositionedElement: PsiElement?): KtElement? {
-        if (notPositionedElement?.javaClass as Class<*> in TYPES_TO_CALCULATE_CLASSNAME) return notPositionedElement as KtElement
+        if (notPositionedElement?.let { it::class.java } as Class<*> in TYPES_TO_CALCULATE_CLASSNAME) return notPositionedElement as KtElement
 
         return readAction { PsiTreeUtil.getParentOfType(notPositionedElement, *TYPES_TO_CALCULATE_CLASSNAME) }
     }
