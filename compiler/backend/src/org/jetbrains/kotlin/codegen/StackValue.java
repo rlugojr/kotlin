@@ -134,19 +134,13 @@ public abstract class StackValue extends StackValueBase {
     }
 
     public void store(@NotNull StackValue value, @NotNull InstructionAdapter v) {
-        store(value, v, false);
+        putReceiver(v, false);
+        value.put(value.type, v);
+        storeSelector(value.type, v);
     }
 
     public boolean canHaveSideEffects() {
         return canHaveSideEffects;
-    }
-
-    public void store(@NotNull StackValue value, @NotNull InstructionAdapter v, boolean skipReceiver) {
-        if (!skipReceiver) {
-            putReceiver(v, false);
-        }
-        value.put(value.type, v);
-        storeSelector(value.type, v);
     }
 
     protected void storeSelector(@NotNull Type topOfStackType, @NotNull InstructionAdapter v) {
@@ -783,7 +777,7 @@ public abstract class StackValue extends StackValueBase {
         }
 
         @Override
-        public void store(@NotNull StackValue rightSide, @NotNull InstructionAdapter v, boolean skipReceiver) {
+        public void store(@NotNull StackValue rightSide, @NotNull InstructionAdapter v) {
             ResolvedCall<FunctionDescriptor> resolvedCall = getResolvedCall(false);
             List<? extends ValueArgument> arguments = resolvedCall.getCall().getValueArguments();
             assert arguments.size() == 3 : "Resolved call for 'setValue' should have 3 arguments, but was " +
@@ -1105,7 +1099,7 @@ public abstract class StackValue extends StackValueBase {
         }
 
         @Override
-        public void store(@NotNull StackValue rightSide, @NotNull InstructionAdapter v, boolean skipReceiver) {
+        public void store(@NotNull StackValue rightSide, @NotNull InstructionAdapter v) {
             if (setter == null) {
                 throw new UnsupportedOperationException("no setter specified");
             }
@@ -1351,7 +1345,7 @@ public abstract class StackValue extends StackValueBase {
         }
 
         @Override
-        public void store(@NotNull StackValue rightSide, @NotNull InstructionAdapter v, boolean skipReceiver) {
+        public void store(@NotNull StackValue rightSide, @NotNull InstructionAdapter v) {
             PropertySetterDescriptor setterDescriptor = descriptor.getSetter();
             if (setter != null && resolvedCall != null && setterDescriptor != null) {
 
@@ -1362,7 +1356,7 @@ public abstract class StackValue extends StackValueBase {
                 storeImpl(rightSide, v, setterDescriptor, lazyArguments);
             }
             else {
-                super.store(rightSide, v, skipReceiver);
+                super.store(rightSide, v);
             }
         }
 
@@ -1823,13 +1817,25 @@ public abstract class StackValue extends StackValueBase {
 
         @Override
         public void store(
-                @NotNull StackValue rightSide, @NotNull InstructionAdapter v, boolean skipReceiver
+                @NotNull StackValue rightSide, @NotNull InstructionAdapter v
         ) {
-            if (!skipReceiver) {
-                putReceiver(v, false);
-            }
+            putReceiver(v, false);
             rightSide.put(rightSide.type, v);
             storeSelector(rightSide.type, v);
+        }
+
+        @Override
+        public void storeWithArguments(
+                @NotNull StackValue value, @NotNull InstructionAdapter v, @Nullable LazyArguments arguments
+        ) {
+            if (arguments == null) {
+                super.storeWithArguments(value, v, null);
+            }
+            else {
+                arguments.generateAllDirectlyTo(v);
+                value.put(type, v);//todo add to args
+                storeSelector(type, v);
+            }
         }
 
         protected StackValueWithSimpleReceiver changeReceiver(@NotNull StackValue newReceiver) {
@@ -1915,9 +1921,9 @@ public abstract class StackValue extends StackValueBase {
 
         @Override
         public void store(
-                @NotNull StackValue rightSide, @NotNull InstructionAdapter v, boolean skipReceiver
+                @NotNull StackValue rightSide, @NotNull InstructionAdapter v
         ) {
-            receiver.store(rightSide, v, skipReceiver);
+            receiver.store(rightSide, v);
 
             Label end = new Label();
             v.goTo(end);
